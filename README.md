@@ -1,15 +1,15 @@
-# MuSCAT Matlab
+# Multi-Spacecraft Concept and Autonomy Tool (MuSCAT) Matlab
 
 ## Step 1
 
 Git clone the repo into your desired folder. Lets say it is `XYZ >`
 
-Then the `MuSCAT_Matlab` folder is accessed using `XYZ > MuSCAT_Matlab`
+Then the `muscat` folder is accessed using `XYZ > muscat`
 
 
 ## Step 2
 
-Ensure that `MuSCAT_Supporting_Files` is in the same parent folder. You can download it from here https://drive.google.com/file/d/1AzU39vuQseXo6uMugp7297hONc-KVx1v/view?usp=sharing 
+Ensure that `MuSCAT_Supporting_Files` is in the same parent folder. You can download it from here https://www.dropbox.com/s/qokkcj6sn802n7p/MuSCAT_Supporting_Files.zip?dl=0 
 
 Then the `MuSCAT_Supporting_Files` folder is accessed using `XYZ > MuSCAT_Supporting_Files`
 
@@ -22,9 +22,9 @@ Download `mice` into the `SPICE` folder from here https://naif.jpl.nasa.gov/naif
 
 Now we are ready to run the mission files. 
 
-First, ensure that Matlab base directory is `XYZ > MuSCAT_Matlab`
+First, ensure that Matlab base directory is `XYZ > muscat`
 
-Second, open in Matlab any of the mission files in `XYZ > MuSCAT_Matlab > Mission` 
+Second, open in Matlab any of the mission files in `XYZ > muscat > Mission` 
 
 Thrid, click `Run`. DO NOT `Change Folder`. Instead click `Add to Path`. 
 
