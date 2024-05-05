@@ -33,11 +33,11 @@ Finally, the code should run out of the box!
 ## Debug Log
 If bugs are encountered, please report in the issues section. For information on resolved bug, please look at the closed issues. 
 
-This software is developed and maintained by: 
-Saptarshi Bandyopadhyay
-Robotics Technologist 
-NASA Jet Propulsion Laboratory 
-California Institute of Technology 
-Pasadena, CA, USA
+This software is developed and maintained by: \\
+Saptarshi Bandyopadhyay \\
+Robotics Technologist   \\
+NASA Jet Propulsion Laboratory \\ 
+California Institute of Technology \\ 
+Pasadena, CA, USA 
 
 Please mail Saptarshi.Bandyopadhyay@jpl.nasa.gov if you face any issues. 
