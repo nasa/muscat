@@ -46,13 +46,13 @@ func_plot_data(ms,mission_true_time,mission_true_small_body,mission_true_solar_s
 fig_number = fig_number + 1;
 func_plot_power(ms,mission_true_time,mission_true_small_body,mission_true_solar_system,mission_init_data,mission_true_SC, fig_number, plot_name_prefix);
 
-% Science
-fig_number = fig_number + 1;
-% func_plot_science(mission_storage,mission_true_time,mission_true_small_body,mission_true_solar_system,mission_init_data,mission_true_SC, fig_number, plot_name_prefix);
-func_plot_science_mothership(ms,mission_true_time,mission_true_small_body,mission_true_solar_system,mission_init_data,mission_true_SC, fig_number, plot_name_prefix);
-
-% Camera
-fig_number = fig_number + 1;
-func_plot_science_camera_mothership(ms,mission_true_time,mission_true_small_body,mission_true_solar_system,mission_init_data,mission_true_SC, fig_number, plot_name_prefix)
+% % Science
+% fig_number = fig_number + 1;
+% % func_plot_science(mission_storage,mission_true_time,mission_true_small_body,mission_true_solar_system,mission_init_data,mission_true_SC, fig_number, plot_name_prefix);
+% func_plot_science_mothership(ms,mission_true_time,mission_true_small_body,mission_true_solar_system,mission_init_data,mission_true_SC, fig_number, plot_name_prefix);
+% 
+% % Camera
+% fig_number = fig_number + 1;
+% func_plot_science_camera_mothership(ms,mission_true_time,mission_true_small_body,mission_true_solar_system,mission_init_data,mission_true_SC, fig_number, plot_name_prefix)
 
 end
