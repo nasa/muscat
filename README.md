@@ -7,7 +7,7 @@ Git clone the repo into your desired folder. Lets say it is `XYZ >`
 Then the `muscat` folder is accessed using `XYZ > muscat`
 
 
-## Step 2
+## Step 2 
 
 Ensure that `MuSCAT_Supporting_Files` is in the same parent folder. You can download it from here https://www.dropbox.com/s/qokkcj6sn802n7p/MuSCAT_Supporting_Files.zip?dl=0 
 
