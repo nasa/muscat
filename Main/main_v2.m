@@ -3,7 +3,7 @@
 addpath(genpath('../MuSCAT_Supporting_Files'))
 
 init_data = [];
-init_data.flag_store_video = 1;
+init_data.flag_store_video = 0;
 init_data.flag_show_video = 0;
 if (init_data.flag_store_video == 1)
     init_data.video_filename = ['Camera_Video','.mp4'];
@@ -45,9 +45,18 @@ for k=2:1:mission_true_time.num_time_steps
     
     % Update Dynamics Flag
     update_dynamics_flag = rem(k, round(mission_true_time.time_step_dynamics / mission_true_time.time_step)) == 0;
-    
+
     % Update time
     mission_true_time = func_update_true_time_date(mission_true_time);
+
+    %% Update Environmental Variables
+    if update_dynamics_flag
+        % Update Sun and Earth Position
+        mission_true_solar_system = func_update_Sun_Earth_position_velocity(mission_true_solar_system,mission_true_time);
+
+        % Update SB position
+        mission_true_small_body.func_update_SB_position_velocity_rot_matrix(mission_true_time);
+    end
     
  
     %% Update SC Variables
@@ -110,14 +119,7 @@ for k=2:1:mission_true_time.num_time_steps
             mission_true_SC{i_SC}.true_SC_rwa_actuator = func_dynamics_reaction_wheel(mission_true_SC{i_SC}.true_SC_rwa_actuator, mission_true_SC{i_SC}.true_SC_adc);
         end
 
-        %% Update Environmental Variables
-        if update_dynamics_flag
-            % Update Sun and Earth Position
-            mission_true_solar_system = func_update_Sun_Earth_position_velocity(mission_true_solar_system,mission_true_time);
 
-            % Update SB position
-            mission_true_small_body.func_update_SB_position_velocity_rot_matrix(mission_true_time);
-        end
 
 
     end
