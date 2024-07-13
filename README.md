@@ -1,6 +1,6 @@
 # Multi-Spacecraft Concept and Autonomy Tool (MuSCAT) 
 
-## Step 1
+## Step 1 
 
 Git clone the repo into your desired folder. Lets say it is `XYZ >`
 
