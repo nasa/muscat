@@ -26,7 +26,7 @@ First, ensure that Matlab base directory is `XYZ > muscat`
 
 Second, open in Matlab any of the mission files in `XYZ > muscat > Mission` 
 
-Thrid, click `Run`. DO NOT `Change Folder`. Instead click `Add to Path`. 
+Thrid, click `Run`. 
 
 Finally, the code should run out of the box!  
 
