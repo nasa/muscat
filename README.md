@@ -1,8 +1,26 @@
 # Multi-Spacecraft Concept and Autonomy Tool (MuSCAT) 
 
-See `Documentation` for detailed description of MuSCAT architecture. 
+Multi-Spacecraft Concept and Autonomy Tool (MuSCAT) open-source simulation software offers an integrated platform for conducting low-fidelity simulations of single/multiple cruising/orbiting spacecraft mission concepts and test of autonomy algorithms. MuSCAT encompasses various spacecraft subsystems such as:\
+(i) Navigation,\
+(ii) Attitude Determination and Control,\
+(iii) Power Management,\
+(iv) Data Handling,\
+(v) Communication (including direct-to-Earth and inter-spacecraft), and\
+(vi) Scientific Instruments.\
+It provides mission designers with a means to quantitatively verify if the mission concept meets level-1 science functional requirements. 
 
-Also see paper: S. Bandyopadhyay, Y. Kumar Nakka, L. Fesq, S. Ardito, “Design and Development of MuSCAT: Multi-Spacecraft Concept and Autonomy Tool,” AIAA Accelerating Space Commerce, Exploration, and New Discovery (ASCEND), 2024. ([DOI](https://doi.org/10.2514/6.2024-4805))
+See `Documentation` for detailed description of MuSCAT architecture. Also see paper: S. Bandyopadhyay, Y. Kumar Nakka, L. Fesq, S. Ardito, “Design and Development of MuSCAT: Multi-Spacecraft Concept and Autonomy Tool,” AIAA Accelerating Space Commerce, Exploration, and New Discovery (ASCEND), 2024. ([DOI](https://doi.org/10.2514/6.2024-4805))
+
+This software is developed and maintained by:
+
+Saptarshi Bandyopadhyay\
+Robotics Technologist\
+NASA Jet Propulsion Laboratory\
+California Institute of Technology\
+Pasadena, CA, USA 
+
+Please mail `Saptarshi.Bandyopadhyay@jpl.nasa.gov` if you face any issues. 
+
 
 
 ## Installation Instructions 
@@ -46,20 +64,6 @@ Finally, the code should run out of the box!
 On Mac, you need to give permissions to SPICE to use it. 
 
 On Windows, we have found a fresh installation of SPICE is the best option. 
-
-
-
-## Report Issues
-
-This software is developed and maintained by:
-
-Saptarshi Bandyopadhyay\
-Robotics Technologist\
-NASA Jet Propulsion Laboratory\
-California Institute of Technology\
-Pasadena, CA, USA 
-
-Please mail `Saptarshi.Bandyopadhyay@jpl.nasa.gov` if you face any issues. 
 
 
 
