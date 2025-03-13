@@ -35,7 +35,7 @@
 
 # Matlab
 *.asv
-*.png
+# *.png
 *.mp4
 *.mat
 
