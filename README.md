@@ -1,13 +1,3 @@
-<p align="center">
-<img src="Documentation/README_Images/jpl-nasa.jpg" width="600px" />
-</p>
-
-<p align="center">
-<a href="https://github.com/nasa/muscat"><img alt="GitHub" src="https://img.shields.io/badge/GitHub-nasa/muscat-blue.svg?style=flat&logo=github" height=22.5></a>
-<img alt="License" src="https://img.shields.io/github/license/nasa/muscat?label=License" height=22.5>
-<img alt="Stars" src="https://img.shields.io/github/stars/nasa/muscat?style=social" height=22.5>
-</p>
-
 # Multi-Spacecraft Concept and Autonomy Tool (MuSCAT) 
 
 > "MuSCAT shines in rapid early-phase evaluation of autonomous mission concepts."
