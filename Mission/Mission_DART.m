@@ -41,7 +41,7 @@ mission.true_time = True_Time(init_data);
 init_data = [];
 init_data.time_step_storage = 1;
 init_data.time_step_storage_attitude = 0.5;
-init_data.flag_visualize_SC_attitude_orbit_during_sim = 0;  % Don't show attitude during sim
+init_data.flag_visualize_SC_attitude_orbit_during_sim = 0;  % [Boolean] Show attitude during sim
 init_data.flag_realtime_plotting = 1;      % [Boolean] Show mission data and attitude during sim
 init_data.flag_save_plots = 1;             % [Boolean] 1: Save them (takes little time), 0: Doesnt save them
 init_data.flag_save_video = 0;             % [Boolean] 1: Save them (takes more time), 0: Doesnt save them
@@ -175,7 +175,7 @@ mission.true_SC{i_SC}.true_SC_body = True_SC_Body(init_data, mission);
 %% Initialize First Spacecraft's Position and Velocity
 
 init_data = [];
-init_data.spice_filename = '../../MuSCAT_Supporting_Files/SC_data/DARE/traj_daresim_simple.bsp'; % [string] : SC s SPICE FileName
+init_data.spice_filename = '../../MuSCAT_Supporting_Files/SC_data/DART/traj_daresim_simple.bsp'; % [string] : SC s SPICE FileName
 cspice_furnsh(init_data.spice_filename)
 
 % bandyopa@MT-319257 exe % ./brief ../../../SC_data/traj_daresim_simple.bsp
@@ -535,11 +535,11 @@ for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_micro_
     init_data = [];
 
     init_data.instantaneous_power_consumption = 10; % Watts
-    init_data.instantaneous_data_generated_per_sample = 1; % Kb
+    init_data.instantaneous_data_generated_per_sample = (3)*16e-3; % [kb] : thrust + health + temperature, each of 16-bit depth
     init_data.mode_true_SC_micro_thruster_selector = 'Simple'; % Mode (Truth/Simple)
     init_data.thruster_noise = 100*(1e-6); % Noise level [N](unit depends on implementation)
 
-    init_data.micro_thruster_ISP = 700;
+    init_data.micro_thruster_ISP = 700; % [sec]
 
     init_data.minimum_thrust = 0.001; % [N]
     init_data.maximum_thrust = 10*(1e-2); % [N]
@@ -615,7 +615,7 @@ for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_reacti
     init_data.mass = 0.137; % [kg] mass of 1 RW
     init_data.max_angular_velocity = 6500*2*pi/60; % [rad/s] 6500 RPM
     init_data.angular_velocity_noise = 0.001*2*pi/60;      % [rad/s] velocity noise (reduced from 0.01)
-    init_data.instantaneous_data_volume = (3)*16e-3; % [kb] : velocity + health + temperature, each of 16-bit depth
+    init_data.instantaneous_data_generated_per_sample = (3)*16e-3; % [kb] : thrust + health + temperature, each of 16-bit depth
     init_data.max_torque = 3.2*1e-3; % Nm 
     
     % Calculate and set maximum acceleration
@@ -747,7 +747,6 @@ mission.true_SC{i_SC}.true_SRP = True_SRP(init_data, mission, i_SC);
 %% Initialize Gravity Gradient for Earth
 init_data = [];
 init_data.enable_G2 = 0; % Disable gravity gradient because Dart is an interceptor
-init_data.main_body = "Earth";
 
 mission.true_SC{i_SC}.true_gravity_gradient = True_Gravity_Gradient(init_data, mission, i_SC);
 
@@ -785,7 +784,7 @@ mission.true_SC{i_SC}.software_SC_control_orbit = Software_SC_Control_Orbit(init
 %% Spacecraft Software: Attitude Control Configuration
 
 init_data = [];
-init_data.mode_software_SC_control_attitude_selector = 'DART Control Asymptotically Stable send to actuators'; % 'DART Control Asymptotically Stable send to actuators'
+init_data.mode_software_SC_control_attitude_selector = 'DART Control Asymptotically Stable send to actuators'; 
 init_data.control_gain = [1 0.2];    % Controller gain parameters
 
 mission.true_SC{i_SC}.software_SC_control_attitude = Software_SC_Control_Attitude(init_data, mission, i_SC);

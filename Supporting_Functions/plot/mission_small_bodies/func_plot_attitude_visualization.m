@@ -189,6 +189,29 @@ if isfield(mission.true_SC{i_SC}, 'software_SC_control_attitude')
 
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % Angle Error between Desired Attitude and Estimated Attitude % %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+if isfield(mission.true_SC{i_SC}, 'software_SC_control_attitude')
+
+    subplot(2,4,8)
+    hold on
+
+    plot(mission.true_time.store.time_attitude(1:kd), mission.true_SC{i_SC}.software_SC_control_attitude.store.error_angle_desired_attitude(1:kd), '-','LineWidth',2,'Color','k')
+
+    grid on
+    %     legend('Location','southwest')
+    xlabel('Time [sec]')
+    ylabel('Error angle [rad]')
+    title('Angle between {\beta}_{desired} and {\beta}_{estimated}','FontSize',mission.storage.plot_parameters.title_font_size)
+    set(gca, 'fontsize',mission.storage.plot_parameters.standard_font_size,'FontName',mission.storage.plot_parameters.standard_font_type)
+    hold off
+
+end
+
+
 sgtitle(['SC ',num2str(i_SC),' Attitude Estimator Performance'],'fontsize',mission.storage.plot_parameters.title_font_size,'FontName',mission.storage.plot_parameters.standard_font_type)
 
 if mission.storage.plot_parameters.flag_save_plots == 1

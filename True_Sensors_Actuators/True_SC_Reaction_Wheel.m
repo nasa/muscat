@@ -4,48 +4,59 @@ classdef True_SC_Reaction_Wheel < handle
 
     %% Properties
     properties
-        %% [EXTERNAL] Parameters set by systems engineers
-        name                         % Name of the reaction wheel
-        health                       % Health status (0: Not working, 1: Working)
+
+        %% [ ] Properties: Initialized Variables
+
         location                     %[m] : Location of the reaction wheel in the body frame
         orientation                  %[Unit vector] : Axis of rotation in the body frame
         max_torque                   %[Nm] : Maximum torque the wheel can apply
         max_angular_velocity         %[rad/s] : Maximum angular velocity
-        moment_of_inertia            %[kg·m^2] : Moment of inertia of the wheel
+        
         radius                       %[m] radius of 1 RW
         mass                         %[kg] : Mass of the reaction wheel
         power_consumed_angular_velocity_array % [power_array ; velocity_array]
         angular_velocity_noise       %[rad/s] : Random noise added to commanded torque
-        rpm_values                   % RPM values for interpolation
-        torque_values                % Torque values for interpolation
-        power_matrix                 % Power consumption matrix for interpolation
+                
+        instantaneous_data_generated_per_sample %[Kb] : Data generated during the current time step
         
-        %% [INTERNAL] Computed internally
+        %% [ ] Properties: Variables Computed Internally
+
+        name                         % Name of the reaction wheel
+        health                       % Health status (0: Not working, 1: Working)
+        
         temperature                  %[deg C]
+        moment_of_inertia            %[kg·m^2] : Moment of inertia of the wheel
+        
         total_momentum               %[kg·m^2/s] : Total momentum of the wheel
-        inertia_matrix               %[kg·m^2] : Inertia matrix of the wheel
+        
         commanded_angular_acceleration % [rad/s] : Desired angular velocity of the wheel
         actual_angular_acceleration  % [rad/s] : Actual realised angular velocity of the wheel
         min_acceleration             % [rad/s^-2]
-        angular_velocity             %[rad/s] : Current angular velocity of the wheel
-        commanded_torque             %[Nm] : Torque commanded by the control system
-        actual_torque                %[Nm] : Actual torque considering saturation and noise
-        saturated                    %[Bool] Is the wheel currently saturated ?
+        angular_velocity             % [rad/s] : Current angular velocity of the wheel
+        
+        actual_torque                % [Nm] : Actual torque considering saturation and noise
+        saturated                    % [Boolean] Is the wheel currently saturated ?
         instantaneous_power_consumption %[Watts] : Power consumed during operation
-        instantaneous_power_consumed    %[Watts] : Alias for power tracking system
-        command_actuation_power_consumed %[Watts] : Power consumed during actuation
-        instantaneous_data_generated %[Kb] : Data generated during the current time step
-        store                        %[Struct] : Store of the reaction wheel
+        instantaneous_power_consumed    %[Watts] : Alias for power tracking system               
+        
         flag_executive               %[Bool] : Is the wheel currently executing a command ?
         envelope_ratio               %[Ratio] : Ratio of the minimum distance between wheels to the radius of the wheel
         maximum_torque               %[Nm] : Maximum torque the wheel can apply
         momentum_capacity            %[kg·m^2/s] : Momentum capacity of the wheel
         maximum_acceleration         %[rad/s^2] : Maximum acceleration the wheel can apply
+
+        instantaneous_data_volume        % [kb]
+
+        %% [ ] Properties: Storage Variables
+
+        store                        %[Struct] : Store of the reaction wheel
     end
 
     %% Methods
     methods
-        %% Constructor
+        %% [ ] Methods: Constructor
+        % Construct an instance of this class
+
         function obj = True_SC_Reaction_Wheel(init_data, mission, i_SC, i_RW)
 
             obj.name = ['Reaction Wheel ', num2str(i_RW)];
@@ -56,6 +67,9 @@ classdef True_SC_Reaction_Wheel < handle
             obj.max_angular_velocity = init_data.max_angular_velocity;
             obj.radius = init_data.radius;
             obj.mass = init_data.mass;
+
+            obj.instantaneous_data_generated_per_sample = init_data.instantaneous_data_generated_per_sample; % [kb]
+            obj.instantaneous_data_volume = obj.instantaneous_data_generated_per_sample; % [kb]
 
             % Calculate moment of inertia
             % For a disk rotating around its center axis : 1/2*m*r^2
@@ -114,7 +128,7 @@ classdef True_SC_Reaction_Wheel < handle
             obj.store = [];
             obj.store.angular_velocity = zeros(mission.storage.num_storage_steps_attitude, 1);
             obj.store.torque = zeros(mission.storage.num_storage_steps_attitude, 1);
-            obj.store.saturated = zeros(mission.storage.num_storage_steps_attitude, 1);;
+            obj.store.saturated = zeros(mission.storage.num_storage_steps_attitude, 1);
 
             obj.store.commanded_angular_acceleration = zeros(mission.storage.num_storage_steps_attitude, 1);
             obj.store.actual_angular_acceleration = zeros(mission.storage.num_storage_steps_attitude, 1);
@@ -122,18 +136,29 @@ classdef True_SC_Reaction_Wheel < handle
 
             obj.store.max_angular_velocity = obj.max_angular_velocity;
 
-            % Register with power system
+            % Update storage
+            func_update_reaction_wheel_store(obj, mission);
+
+            % Update SC Power Class
             func_initialize_list_HW_energy_consumed(mission.true_SC{i_SC}.true_SC_power, obj, mission);
+
+            % Update SC Data Handling Class
+            func_initialize_list_HW_data_generated(mission.true_SC{i_SC}.true_SC_data_handling, obj, mission);
 
         end
 
-        %% Update Storage
+        %% [ ] Methods: Store
+        % Update the store variable
+
         function obj = func_update_reaction_wheel_store(obj, mission)
             obj.store.angular_velocity(mission.storage.k_storage_attitude, :) = obj.angular_velocity;
             obj.store.actual_torque(mission.storage.k_storage_attitude, :) = obj.actual_torque;
             obj.store.commanded_angular_acceleration(mission.storage.k_storage_attitude, :) = obj.commanded_angular_acceleration;
             obj.store.saturated(mission.storage.k_storage_attitude, :) = obj.saturated;
         end
+
+        %% [ ] Methods: Main
+        % Update Reaction Wheel
 
         function func_main_true_reaction_wheel(obj, mission, i_SC, ~)
             % Main function that runs the reaction wheel simulation
@@ -142,7 +167,7 @@ classdef True_SC_Reaction_Wheel < handle
                 obj.angular_velocity = 0;
                 obj.instantaneous_power_consumption = 0;
                 obj.instantaneous_power_consumed = 0;
-                obj.instantaneous_data_generated = 0;
+                obj.instantaneous_data_generated_per_sample = 0;
                 obj.actual_torque = [0,0,0];
                 obj.actual_angular_acceleration = 0;
                 return;
@@ -247,19 +272,23 @@ classdef True_SC_Reaction_Wheel < handle
                 % Set property for power tracking system
                 obj.instantaneous_power_consumed = obj.instantaneous_power_consumption;
                             
-                % Update the power system with this consumption
-                func_update_instantaneous_power_consumed_attitude(mission.true_SC{i_SC}.true_SC_power, obj, mission);
+                % Update the data generated
+                obj.instantaneous_data_generated_per_sample = obj.instantaneous_data_volume; % [kb]
             
-
-                obj.instantaneous_data_generated = obj.instantaneous_power_consumption / 10;
 
             else
                 obj.commanded_angular_acceleration = 0;
                 obj.instantaneous_power_consumption = 0;
                 obj.instantaneous_power_consumed = 0;
-                obj.instantaneous_data_generated = 0;
+                obj.instantaneous_data_generated_per_sample = 0;
             end
 
+            % Update Power Consumed
+            func_update_instantaneous_power_consumed(mission.true_SC{i_SC}.true_SC_power, obj, mission);
+
+            % Update Data Generated
+            func_update_instantaneous_data_generated(mission.true_SC{i_SC}.true_SC_data_handling, obj, mission);
+            
             % Update storage
             func_update_reaction_wheel_store(obj, mission);
             

@@ -287,7 +287,7 @@ classdef True_SC_Body < handle
         end
 
 
-        %% [ ] Methods: Update Mass COM MI
+        %% [ ] Methods: Update Total Mass, COM, MI
         % Update total mass and COM
 
         function obj = func_update_SC_body_total_mass_COM_MI(obj)
@@ -374,7 +374,7 @@ classdef True_SC_Body < handle
 
 
         
-        %% [ ] Methods: Update Mass Class
+        %% [ ] Methods: Update Mass 
         % Update the mass class with solar panel and propellant mass
 
         function obj = func_update_SC_body_mass(obj, mission, i_SC)

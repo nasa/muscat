@@ -426,25 +426,7 @@ classdef True_Target_SPICE < handle
                     rot = rot'; % From Body frame to J2000
             end
         end
-
-        %% [ ] Methods: OLD
-
-        %         function [rv, rot] = func_get_position_velocity_rot(obj, true_time, tspan)
-        %             % Input:
-        %             %   true_time: True time object
-        %             %   tspan: Time span [s] (N x 1)
-        %             % Output:
-        %             %   rv: Position and velocity of SB in inertial frame [km, km/sec] (N x 6)
-        %             %   rot: Rotation matrix of from inertial frame to the body-fixed frame (N x 3 x 3)
-        %
-        %             rv = cspice_spkezr(obj.spice_name, true_time.t_initial_date + tspan, 'J2000', 'NONE', 'SUN')';
-        %             if nargout > 1
-        %                 rot = zeros(length(tspan),3,3);
-        %                 for i = 1:length(tspan)
-        %                     rot(i,:,:) = func_compute_target_rotation_matrix(obj, true_time, tspan(i));
-        %                 end
-        %             end
-        %         end
+        
 
     end
 end

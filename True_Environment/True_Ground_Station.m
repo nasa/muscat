@@ -193,7 +193,7 @@ classdef True_Ground_Station < handle
         end
 
 
-        %% [ ] Methods: Update Instantaneous Data transmitted
+        %% [ ] Methods: Update Instantaneous Data Transmitted
         % Updates instantaneous_data_transmitted by all HW and Classes
 
         function obj = func_update_instantaneous_data_transmitted(obj, equipment, mission)
@@ -229,7 +229,7 @@ classdef True_Ground_Station < handle
 
 
 
-        %% [ ] Methods: Update Instantaneous Data received
+        %% [ ] Methods: Update Instantaneous Data Received
         % Updates instantaneous_data_received by all HW and Classes
 
         function obj = func_update_instantaneous_data_received(obj, equipment, mission)

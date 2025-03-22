@@ -24,10 +24,10 @@ for k = 1:1:mission.true_time.num_time_steps
     %% For Each Spacecraft
     for i_SC = 1:1:mission.num_SC
 
-        %% Update Solar Radiation Pressure
+        %% [ ] Update Solar Radiation Pressure
         func_main_true_SRP(mission.true_SC{i_SC}.true_SRP, mission, i_SC); 
 
-        %% Update Gravity Gradient
+        %% [ ] Update Gravity Gradient
         func_update_disurbance_torque_G2(mission.true_SC{i_SC}.true_gravity_gradient, mission, i_SC);     
     
         %% [ ] Update SC Body
@@ -199,30 +199,7 @@ for k = 1:1:mission.true_time.num_time_steps
     if  ~isempty(w)
         warning('off',w.identifier);
     end
-
-    %% TEST: Force spacecraft rotation for visualization testing
-    % This section is just for testing the visualization - remove once confirmed working
-    if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isfield(mission.true_SC{i_SC}.true_SC_adc, 'rotation_matrix')
-        % Create a small rotation around Z axis
-        angle_increment = 0.01; % Small angle in radians
-        cos_ang = cos(angle_increment);
-        sin_ang = sin(angle_increment);
-        rot_z = [cos_ang, -sin_ang, 0; 
-                 sin_ang, cos_ang, 0; 
-                 0, 0, 1];
-        
-        % Apply small rotation to current rotation matrix
-        mission.true_SC{i_SC}.true_SC_adc.rotation_matrix = rot_z * mission.true_SC{i_SC}.true_SC_adc.rotation_matrix;
-        
-        % Update quaternion if it exists
-        if isfield(mission.true_SC{i_SC}.true_SC_adc, 'quaternion')
-            % Convert rotation matrix to quaternion
-            % Simple conversion for this test
-            mission.true_SC{i_SC}.true_SC_adc.quaternion = mission.true_SC{i_SC}.true_SC_adc.quaternion + 0.01 * [0, 0, sin(angle_increment/2), cos(angle_increment/2)];
-            mission.true_SC{i_SC}.true_SC_adc.quaternion = mission.true_SC{i_SC}.true_SC_adc.quaternion / norm(mission.true_SC{i_SC}.true_SC_adc.quaternion);
-        end
-    end
-
+    
     %% Update real-time visualization
     func_update_realtime_plot(mission.storage, mission);
 

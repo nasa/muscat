@@ -233,45 +233,7 @@ classdef True_SC_Science_Radar < handle
 
         end
 
-        %% [ ] Methods: DROID Radar
-        % Execute DROID Radar code
-
-        function obj = func_true_SC_science_radar_DROID(obj, mission, i_SC)
-
-            i_target = mission.true_SC{i_SC}.true_SC_navigation.index_relative_target;
-
-            this_pos_points = (mission.true_target{i_target}.rotation_matrix * obj.pos_points')'; % Rotated unit vectors
-
-            SC_pos_normalize = func_normalize_vec(mission.true_SC{i_SC}.true_SC_navigation.position - mission.true_target{i_target}.position); % SC unit vector
-
-            dot_prod_angle_array = real(acosd(this_pos_points * SC_pos_normalize')); % [deg] angle between the vectors SC-SB and mesh_point-SB
-
-            if obj.field_of_view == 0
-                % Use cloest point
-                [min_angle,index_point_science_mesh] = min(dot_prod_angle_array);
-
-            else
-                % Use all points within field of view
-                index_point_science_mesh = find(dot_prod_angle_array <= obj.field_of_view);
-
-            end
-
-            % MONOSTATIC
-
-            for i = 1:1:length(index_point_science_mesh)
-
-                if obj.monostatic_observed_point(index_point_science_mesh(i)) == 0
-                    obj.monostatic_num_point_observed = obj.monostatic_num_point_observed + 1;
-                end
-
-                obj.monostatic_observed_point(index_point_science_mesh(i)) = obj.monostatic_observed_point(index_point_science_mesh(i)) + 1;
-
-            end
-
-            % Update Data Generated
-            func_update_instantaneous_data_generated(mission.true_SC{i_SC}.true_SC_data_handling, obj, mission);            
-
-        end
+        
         
         %% [ ] Methods: Visualize Radar Coverage
         % Visualize all SC attitude orbit during simulation
@@ -280,7 +242,8 @@ classdef True_SC_Science_Radar < handle
 
             obj.prev_time_visualize_SC_radar_coverage_during_sim = mission.true_SC{i_SC}.software_SC_executive.time; % [sec]
 
-            plot_handle = figure( (7*i_SC) + i_HW);
+            %  (20*i_SC) + i_HW
+            plot_handle = figure('Name',['SC ',num2str(i_SC),' Radar ',num2str(i_HW),' Coverage']);
             clf
             set(plot_handle,'Color',[1 1 1]);
             set(plot_handle,'units','normalized','outerposition',[0 0 1 1])

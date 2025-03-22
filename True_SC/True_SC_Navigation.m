@@ -199,7 +199,7 @@ classdef True_SC_Navigation < handle
         end
 
 
-        %%  [ ] Methods: Update Position Velocity Absolute Dynamics
+        %% [ ] Methods: Update Position Velocity Absolute Dynamics
         % Update position and velocity using Absolute dynamics
 
         function obj = func_update_SC_navigation_position_velocity_Absolute_Dynamics(obj, mission, i_SC)
@@ -229,13 +229,13 @@ classdef True_SC_Navigation < handle
 
         function obj = func_update_disturbance_force(obj,mission, i_SC)
             % Sum up all disturbance forces
-            obj.disturbance_force = mission.true_SC{i_SC}.true_gravity_gradient.disturbance_force_G2' + mission.true_SC{i_SC}.true_SRP.disturbance_force_SRP';
+            obj.disturbance_force = mission.true_SC{i_SC}.true_SRP.disturbance_force_SRP';
         end
       
 
 
 
-        %% Methods: Update Visible Sun Earth
+        %% [ ] Methods: Update Visible Sun Earth
         % Update flag_visible_Sun and flag_visible_Earth
 
         function obj = func_update_visible_Sun_Earth(obj, mission)
@@ -324,7 +324,7 @@ classdef True_SC_Navigation < handle
         end
 
 
-        %% Methods: Check SC Crashed
+        %% [ ] Methods: Check SC Crashed
         % Update flag_SC_crashed
 
         function obj = func_update_flag_SC_crashed(obj, mission, i_SC)

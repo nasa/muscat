@@ -26,7 +26,7 @@ end
 
 plot(mission.true_time.store.time(1:kd), mission.true_SC{i_SC}.software_SC_executive.store.this_sc_mode_value(1:kd), '-k', 'LineWidth',2, 'DisplayName','Actual')
 
-legend('Location','northwest')
+legend('Location','southeast')
 xlabel('Time [sec]')
 ylabel('SC Mode')
 

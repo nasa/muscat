@@ -93,7 +93,7 @@ classdef True_SC_Generic_Sensor < handle
         end
 
         %% [ ] Methods: Main
-        % Update Radar
+        % Update Generic Sensor
 
         function obj = func_main_true_SC_generic_sensor(obj, mission, i_SC)
 

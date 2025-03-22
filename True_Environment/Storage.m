@@ -303,7 +303,7 @@ classdef Storage < handle
 
             % Memory optimization: create a function to run between plots to cleanup memory
             function cleanup_memory()
-                drawnow;  % Flush graphics queue and allow MATLAB to reclaim memory
+                drawnow limitrate;  % Flush graphics queue and allow MATLAB to reclaim memory
                 % More can be added here in case of need !
             end
 

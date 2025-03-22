@@ -1,5 +1,5 @@
-%% Class: True_SC_SRP
-% Tracks the Solar Radiation Pressure effects on spacecraft
+%% Class: True_SRP
+% Tracks the Solar Radiation Pressure (SRP) effects on spacecraft
 
 classdef True_SRP < handle
     
