@@ -30,7 +30,7 @@ mission.flag_stop_sim = 0;     % Boolean flag to stop simulation if needed
 
 init_data = [];
 init_data.t_initial = 0;                                    % [sec] Initial time
-init_data.t_final = 200000; %                               % [sec] Final time 
+init_data.t_final = 200000;                                 % [sec] Final time 
 init_data.time_step = 5;                                    % [sec] Simulation time step
 init_data.t_initial_date_string = '02-NOV-2018 00:00:00';   % Format = [DD-MMM-YYYY HH:MM:SS]
 init_data.time_step_attitude = 0.1;                         % [sec] Time step for attitude dynamics
@@ -741,14 +741,14 @@ end
 init_data = [];
 init_data.enable_SRP = 1; % Enable SRP calculations
 
-mission.true_SC{i_SC}.true_SRP = True_SRP(init_data, mission, i_SC);
+mission.true_SC{i_SC}.true_SC_SRP = True_SC_SRP(init_data, mission, i_SC);
 
 
 %% Initialize Gravity Gradient for Earth
 init_data = [];
 init_data.enable_G2 = 0; % Disable gravity gradient because Dart is an interceptor
 
-mission.true_SC{i_SC}.true_gravity_gradient = True_Gravity_Gradient(init_data, mission, i_SC);
+mission.true_SC{i_SC}.true_SC_gravity_gradient = True_SC_Gravity_Gradient(init_data, mission, i_SC);
 
 
 %% Spacecraft Software: Executive Configuration

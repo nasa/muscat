@@ -43,10 +43,13 @@ beta_dot = 0.5 * Zbeta * omega;
 % Jω̇ = u_control - ω × (Jω + h_rw) + τ_dist
 % where h_rw is reaction wheel angular momentum
 % and τ_dist is disturbance torque
-omega_dot = mission.true_SC{i_SC}.true_SC_body.total_MI \ (mission.true_SC{i_SC}.true_SC_adc.control_torque - ...
+
+omega_dot = mission.true_SC{i_SC}.true_SC_body.total_MI \ (mission.true_SC{i_SC}.true_SC_adc.control_torque' - ...
     cross(omega, mission.true_SC{i_SC}.true_SC_body.total_MI * omega +...
     mission.true_SC{i_SC}.true_SC_adc.total_wheel_momentum) + ...
-    mission.true_SC{i_SC}.true_SC_adc.disturbance_torque);
+    mission.true_SC{i_SC}.true_SC_adc.disturbance_torque');
+
+
 
 % Combine state derivatives
 Xdot = [beta_dot; omega_dot];

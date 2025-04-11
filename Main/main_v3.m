@@ -25,10 +25,10 @@ for k = 1:1:mission.true_time.num_time_steps
     for i_SC = 1:1:mission.num_SC
 
         %% [ ] Update Solar Radiation Pressure
-        func_main_true_SRP(mission.true_SC{i_SC}.true_SRP, mission, i_SC); 
+        func_main_true_SC_SRP(mission.true_SC{i_SC}.true_SC_SRP, mission, i_SC); 
 
         %% [ ] Update Gravity Gradient
-        func_update_disurbance_torque_G2(mission.true_SC{i_SC}.true_gravity_gradient, mission, i_SC);     
+        func_main_true_SC_gravity_gradient(mission.true_SC{i_SC}.true_SC_gravity_gradient, mission, i_SC);     
     
         %% [ ] Update SC Body
         func_main_true_SC_body(mission.true_SC{i_SC}.true_SC_body, mission, i_SC);

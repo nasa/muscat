@@ -241,7 +241,7 @@ classdef True_SC_Reaction_Wheel < handle
 
                 % Update spacecraft torque directly
                 mission.true_SC{i_SC}.true_SC_adc.control_torque = ...
-                    mission.true_SC{i_SC}.true_SC_adc.control_torque + obj.actual_torque'; 
+                    mission.true_SC{i_SC}.true_SC_adc.control_torque + obj.actual_torque; 
                                 
                 % Update power and data
                 obj.instantaneous_power_consumption = abs(obj.actual_torque * obj.angular_velocity);

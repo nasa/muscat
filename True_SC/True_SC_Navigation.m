@@ -206,7 +206,7 @@ classdef True_SC_Navigation < handle
 
             this_time_array = mission.true_time.time_position_array;
             
-            obj = obj.func_update_disturbance_force(mission, i_SC);
+            %             obj = obj.func_update_disturbance_force(mission, i_SC);
 
             SC_pos_vel_current = [obj.position'; obj.velocity']; % [km, km/sec] in (6,1) format
             [T,X]=ode113(@(t,X) func_ode_orbit_inertial_absolute_dynamics(t, X, mission, i_SC), this_time_array, SC_pos_vel_current, obj.ode_options);
@@ -227,10 +227,10 @@ classdef True_SC_Navigation < handle
         end
 
 
-        function obj = func_update_disturbance_force(obj,mission, i_SC)
-            % Sum up all disturbance forces
-            obj.disturbance_force = mission.true_SC{i_SC}.true_SRP.disturbance_force_SRP';
-        end
+        %         function obj = func_update_disturbance_force(obj,mission, i_SC)
+        %             % Sum up all disturbance forces
+        %             obj.disturbance_force = mission.true_SC{i_SC}.true_SRP.disturbance_force_SRP';
+        %         end
       
 
 

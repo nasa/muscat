@@ -19,6 +19,7 @@ classdef True_SC_ADC < handle
 
 
         %% [ ] Properties: Variables Computed Internally
+
         rotation_matrix % : Rotation matrix that converts vector in body frame B to vector in inertial frame I
         dot_angular_velocity % [rad/sec^2] : Time derivative of angular_velocity (needed by RWA) 
                 % RWA - Reaction Wheels | MT momentum Thrusters?
@@ -52,11 +53,11 @@ classdef True_SC_ADC < handle
             % Compute Rotation Matrix
             obj = func_update_true_SC_ADC_rotation_matrix(obj);
 
-            obj.dot_angular_velocity = zeros(3,1);
-            obj.control_torque = zeros(3,1);
-            obj.disturbance_torque = zeros(3,1);
-            obj.total_wheel_momentum = zeros(3,1); % Initialize as 3x1 vector
-            obj.total_torque = zeros(3,1);
+            obj.dot_angular_velocity = [0 0 0];
+            obj.control_torque = [0 0 0];
+            obj.disturbance_torque = [0 0 0];
+            obj.total_wheel_momentum = [0 0 0]; % Initialize as 3x1 vector
+            obj.total_torque = [0 0 0];
 
             obj.ode_options = odeset('RelTol',1e-14,'AbsTol',1e-14);
 
@@ -124,11 +125,11 @@ classdef True_SC_ADC < handle
             obj = func_update_true_SC_adc_store(obj, mission);
 
             % Reset variables
-            obj.control_torque =  zeros(3,1);     % [Nm]
+            obj.control_torque =  [0 0 0];     % [Nm]
 
             % Reset every main time step
             if (mission.true_time.k_attitude == mission.true_time.num_time_steps_attitude)
-                obj.disturbance_torque = zeros(3,1); % Reset torque
+                obj.disturbance_torque = [0 0 0]; % Reset torque
             end
         end
 
