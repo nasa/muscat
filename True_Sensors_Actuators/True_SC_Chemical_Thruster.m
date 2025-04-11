@@ -400,12 +400,10 @@ classdef True_SC_Chemical_Thruster < handle
 
                             % Compute the disturbance torque
                             r = obj.location - mission.true_SC{i_SC}.true_SC_body.location_COM;
-                            obj.control_torque_CT = cross(r, force_body)';
+                            obj.control_torque_CT = cross(r, force_body);
                             
                             % Apply torque to attitude system
-                            mission.true_SC{i_SC}.true_SC_adc.disturbance_torque = mission.true_SC{i_SC}.true_SC_adc.disturbance_torque + obj.control_torque_CT;
-
-                            obj.control_torque_CT = obj.control_torque_CT';
+                            mission.true_SC{i_SC}.true_SC_adc.disturbance_torque = mission.true_SC{i_SC}.true_SC_adc.disturbance_torque + obj.control_torque_CT;                            
 
                             % Update power consumption (warm-up + actuation)
                             obj.instantaneous_power_consumption = obj.thruster_warm_up_power_consumed + obj.command_actuation_power_consumed;

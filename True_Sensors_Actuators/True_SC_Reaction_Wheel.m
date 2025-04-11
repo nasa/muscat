@@ -284,7 +284,7 @@ classdef True_SC_Reaction_Wheel < handle
             end
 
             % Update Power Consumed
-            func_update_instantaneous_power_consumed(mission.true_SC{i_SC}.true_SC_power, obj, mission);
+            func_update_instantaneous_power_consumed_attitude(mission.true_SC{i_SC}.true_SC_power, obj, mission);
 
             % Update Data Generated
             func_update_instantaneous_data_generated(mission.true_SC{i_SC}.true_SC_data_handling, obj, mission);
