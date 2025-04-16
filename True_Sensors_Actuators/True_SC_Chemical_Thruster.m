@@ -171,19 +171,9 @@ classdef True_SC_Chemical_Thruster < handle
         %% [ ] Methods: Store
         % Update the store variable
 
-        function obj = func_update_true_chemical_thruster_store(obj, mission)
-            % Append new thrust data to the storage arrays
-            
-            % Ensure all values are valid before storing (defend against empty arrays)
-            if isempty(obj.commanded_thrust)
-                obj.commanded_thrust = 0;
-            end
-            
-            if isempty(obj.true_commanded_thrust)
-                obj.true_commanded_thrust = 0;
-            end
-            
-            % Store values with safety checks
+        function obj = func_update_true_chemical_thruster_store(obj, mission)            
+                        
+            % Store values
             obj.store.commanded_thrust(mission.storage.k_storage,:) = obj.commanded_thrust;
             obj.store.true_commanded_thrust(mission.storage.k_storage,:) = obj.true_commanded_thrust;
             obj.store.force_inertial(mission.storage.k_storage,:) = obj.force_inertial;
@@ -430,12 +420,7 @@ classdef True_SC_Chemical_Thruster < handle
                             % Calculate and display the remaining DeltaV to be applied
                             remaining_DeltaV = mission.true_SC{i_SC}.software_SC_control_orbit.desired_control_DeltaV - mission.true_SC{i_SC}.software_SC_control_orbit.total_DeltaV_executed;
                             disp(['Remaining DeltaV: ', num2str(norm(remaining_DeltaV)), ' m/s']);
-                            
-                            % Data generatio
-                            if isempty(obj.instantaneous_data_volume) 
-                                obj.instantaneous_data_volume = obj.instantaneous_data_generated;
-                            end
-                            
+                                                       
                             % Calculate fuel consumption
                             dt = mission.true_time.time_step;
                             g0 = 9.80665; % m/s^2

@@ -11,7 +11,7 @@ dt = mission.true_time.time_step;
 % Check for healthy thrusters
 healthy_thrusters = [];
 for i_thruster = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster
-    if mission.true_SC{i_SC}.true_SC_chemical_thruster(i_thruster).health
+    if mission.true_SC{i_SC}.true_SC_chemical_thruster{i_thruster}.health
         healthy_thrusters = [healthy_thrusters, i_thruster];
     end
 end
@@ -29,7 +29,7 @@ end
 % Check if thruster is ready for firing
 all_thrusters_ready = true;
 for i = 1:length(healthy_thrusters)
-    if ~mission.true_SC{i_SC}.true_SC_chemical_thruster(healthy_thrusters(i)).func_is_thruster_ready()
+    if ~mission.true_SC{i_SC}.true_SC_chemical_thruster{healthy_thrusters(i)}.func_is_thruster_ready()
         all_thrusters_ready = false;
         break;
     end
@@ -55,7 +55,7 @@ if remaining_magnitude > 0
     % Get thruster parameters
     max_thrusts = zeros(1, length(healthy_thrusters));
     for i = 1:length(healthy_thrusters)
-        max_thrusts(i) = mission.true_SC{i_SC}.true_SC_chemical_thruster(healthy_thrusters(i)).maximum_thrust;
+        max_thrusts(i) = mission.true_SC{i_SC}.true_SC_chemical_thruster{healthy_thrusters(i)}.maximum_thrust;
     end
 
     % Get current attitude matrix
@@ -65,7 +65,7 @@ if remaining_magnitude > 0
     % Rotate thruster directions to inertial frame
     thruster_body_directions = zeros(3, length(healthy_thrusters));
     for i = 1:length(healthy_thrusters)
-        thruster_body_directions(:, i) = mission.true_SC{i_SC}.true_SC_chemical_thruster(healthy_thrusters(i)).orientation';
+        thruster_body_directions(:, i) = mission.true_SC{i_SC}.true_SC_chemical_thruster{healthy_thrusters(i)}.orientation';
     end
     orientations = R * thruster_body_directions;
     A = orientations;
@@ -89,15 +89,15 @@ if remaining_magnitude > 0
 
             % Clamp to thruster limits
             thrust_vector(i) = min(max(thrust_vector(i),...
-                mission.true_SC{i_SC}.true_SC_chemical_thruster(healthy_thrusters(i)).minimum_thrust), ...
-                mission.true_SC{i_SC}.true_SC_chemical_thruster(healthy_thrusters(i)).maximum_thrust);
+                mission.true_SC{i_SC}.true_SC_chemical_thruster{healthy_thrusters(i)}.minimum_thrust), ...
+                mission.true_SC{i_SC}.true_SC_chemical_thruster{healthy_thrusters(i)}.maximum_thrust);
         end
     end
 
     % Apply thrust commands to thrusters
     for i = 1:length(healthy_thrusters)
-        mission.true_SC{i_SC}.true_SC_chemical_thruster(healthy_thrusters(i)).commanded_thrust = thrust_vector(i);
-        mission.true_SC{i_SC}.true_SC_chemical_thruster(healthy_thrusters(i)).flag_executive = 1;
+        mission.true_SC{i_SC}.true_SC_chemical_thruster{healthy_thrusters(i)}.commanded_thrust = thrust_vector(i);
+        mission.true_SC{i_SC}.true_SC_chemical_thruster{healthy_thrusters(i)}.flag_executive = 1;
 
         % Save that we commanded a thrust (needed for completion checks)
         obj.desired_control_thrust = obj.desired_control_thrust + thrust_vector(i);

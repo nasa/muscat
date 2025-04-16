@@ -30,10 +30,10 @@ for i_SC = 1:1:mission.num_SC
         firing_indices = [];
         
         % Go through each thruster - OPTIMIZED APPROACH
-        for i_MT = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster
+        for i_CT = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster
             % Check if thruster_state field exists
-            if isfield(mission.true_SC{i_SC}.true_SC_chemical_thruster(i_MT).store, 'thruster_state')
-                thruster_states = mission.true_SC{i_SC}.true_SC_chemical_thruster(i_MT).store.thruster_state;
+            if isfield(mission.true_SC{i_SC}.true_SC_chemical_thruster{i_CT}.store, 'thruster_state')
+                thruster_states = mission.true_SC{i_SC}.true_SC_chemical_thruster{i_CT}.store.thruster_state;
                 
                 % Pre-process all thruster states at once instead of one by one
                 is_firing = false(kd, 1);

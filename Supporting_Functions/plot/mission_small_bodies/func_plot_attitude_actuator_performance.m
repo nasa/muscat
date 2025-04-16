@@ -144,7 +144,7 @@ if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isfield(mission.true_SC{i_SC
             % Process each chemical thruster
             for i_CT = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster
                 % Get thruster data using parentheses for object access
-                thruster = mission.true_SC{i_SC}.true_SC_chemical_thruster(i_CT);
+                thruster = mission.true_SC{i_SC}.true_SC_chemical_thruster{i_CT};
 
                 % Check if the control_torque_CT field exists in storage
                 if isfield(thruster.store, 'control_torque_CT')

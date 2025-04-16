@@ -73,9 +73,9 @@ if obj.desired_DeltaV_needs_to_be_executed && obj.desired_DeltaV_computed
 
         % Stop warming up thruster if needed
         for i_thruster = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster
-            if mission.true_SC{i_SC}.true_SC_chemical_thruster(i_thruster).health
-                mission.true_SC{i_SC}.true_SC_chemical_thruster(i_thruster).flag_warming_up = false;
-                mission.true_SC{i_SC}.true_SC_chemical_thruster(i_thruster).flag_executive = false;
+            if mission.true_SC{i_SC}.true_SC_chemical_thruster{i_thruster}.health
+                mission.true_SC{i_SC}.true_SC_chemical_thruster{i_thruster}.flag_warming_up = false;
+                mission.true_SC{i_SC}.true_SC_chemical_thruster{i_thruster}.flag_executive = false;
             end
         end
 
@@ -104,8 +104,8 @@ if obj.desired_DeltaV_needs_to_be_executed && obj.desired_DeltaV_computed
 
             % Stop warming up thruster
             for i_thruster = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster
-                if mission.true_SC{i_SC}.true_SC_chemical_thruster(i_thruster).health
-                    mission.true_SC{i_SC}.true_SC_chemical_thruster(i_thruster).flag_warming_up = false;
+                if mission.true_SC{i_SC}.true_SC_chemical_thruster{i_thruster}.health
+                    mission.true_SC{i_SC}.true_SC_chemical_thruster{i_thruster}.flag_warming_up = false;
                 end
             end
             return;
@@ -118,8 +118,8 @@ if obj.desired_DeltaV_needs_to_be_executed && obj.desired_DeltaV_computed
     % Get thruster warm-up time
     thruster_warm_up_time = 30; % Default value
     for i_thruster = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster
-        if mission.true_SC{i_SC}.true_SC_chemical_thruster(i_thruster).health
-            thruster_warm_up_time = mission.true_SC{i_SC}.true_SC_chemical_thruster(i_thruster).thruster_warm_up_time;
+        if mission.true_SC{i_SC}.true_SC_chemical_thruster{i_thruster}.health
+            thruster_warm_up_time = mission.true_SC{i_SC}.true_SC_chemical_thruster{i_thruster}.thruster_warm_up_time;
             break;
         end
     end
@@ -127,7 +127,7 @@ if obj.desired_DeltaV_needs_to_be_executed && obj.desired_DeltaV_computed
     % Start thruster warm-up with a safety margin (45 sec before needed)
     thruster_warming = false;
     for i_thruster = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster
-        if mission.true_SC{i_SC}.true_SC_chemical_thruster(i_thruster).flag_warming_up
+        if mission.true_SC{i_SC}.true_SC_chemical_thruster{i_thruster}.flag_warming_up
             thruster_warming = true;
             break;
         end
@@ -136,9 +136,9 @@ if obj.desired_DeltaV_needs_to_be_executed && obj.desired_DeltaV_computed
     if time_to_DeltaV > 0 && time_to_DeltaV <= (thruster_warm_up_time + 45) && ~thruster_warming
         % Time to start warming up the thruster
         for i_thruster = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster
-            if mission.true_SC{i_SC}.true_SC_chemical_thruster(i_thruster).health
-                mission.true_SC{i_SC}.true_SC_chemical_thruster(i_thruster).flag_warming_up = true;
-                mission.true_SC{i_SC}.true_SC_chemical_thruster(i_thruster).func_start_warm_up(mission);
+            if mission.true_SC{i_SC}.true_SC_chemical_thruster{i_thruster}.health
+                mission.true_SC{i_SC}.true_SC_chemical_thruster{i_thruster}.flag_warming_up = true;
+                mission.true_SC{i_SC}.true_SC_chemical_thruster{i_thruster}.func_start_warm_up(mission);
             end
         end
         disp(['Starting thruster warm-up at T-', num2str(time_to_DeltaV), ' seconds before maneuver']);
@@ -185,9 +185,9 @@ if obj.desired_DeltaV_needs_to_be_executed && obj.desired_DeltaV_computed
 
         % Turn off thruster warm-up
         for i_thruster = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster
-            if mission.true_SC{i_SC}.true_SC_chemical_thruster(i_thruster).health
-                mission.true_SC{i_SC}.true_SC_chemical_thruster(i_thruster).flag_warming_up = false;
-                mission.true_SC{i_SC}.true_SC_chemical_thruster(i_thruster).commanded_thrust = 0;
+            if mission.true_SC{i_SC}.true_SC_chemical_thruster{i_thruster}.health
+                mission.true_SC{i_SC}.true_SC_chemical_thruster{i_thruster}.flag_warming_up = false;
+                mission.true_SC{i_SC}.true_SC_chemical_thruster{i_thruster}.commanded_thrust = 0;
             end
         end
 

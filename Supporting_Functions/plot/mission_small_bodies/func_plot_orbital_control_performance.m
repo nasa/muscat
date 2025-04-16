@@ -31,8 +31,8 @@ function func_plot_orbital_control_performance(mission, i_SC)
         num_thrusters = mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster;
         
         % Only use the first thruster for plots (typically only one chemical thruster)
-        i_MT = 1;
-        thruster = mission.true_SC{i_SC}.true_SC_chemical_thruster(i_MT);
+        i_CT = 1;
+        thruster = mission.true_SC{i_SC}.true_SC_chemical_thruster{i_CT};
         
         % Plot 1: Thrust plot
         subplot(nb_row, nb_col, 1);
@@ -351,7 +351,7 @@ function func_plot_orbital_control_performance(mission, i_SC)
         chemical_consumption = zeros(kd, 1);
         if has_chemical_thrusters
             for i_CT = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster
-                thruster = mission.true_SC{i_SC}.true_SC_chemical_thruster(i_CT);
+                thruster = mission.true_SC{i_SC}.true_SC_chemical_thruster{i_CT};
                 if isfield(thruster.store, 'total_fuel_consumed')
                     chemical_consumption = chemical_consumption + thruster.store.total_fuel_consumed(1:kd);
                 end

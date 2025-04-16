@@ -28,7 +28,7 @@ switch mission.true_SC{i_SC}.software_SC_executive.this_sc_mode
 
     case 'Point Thruster along DeltaV direction'
         % Point thruster in direction of desired deltaV
-        obj.data.primary_vector = func_normalize_vec(mission.true_SC{i_SC}.true_SC_chemical_thruster.orientation); % In body frame
+        obj.data.primary_vector = func_normalize_vec(mission.true_SC{i_SC}.true_SC_chemical_thruster{1}.orientation); % In body frame
 
         % Use the deltaV vector direction instead of target direction
         deltaV = mission.true_SC{i_SC}.software_SC_control_orbit.desired_control_DeltaV;

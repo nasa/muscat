@@ -172,6 +172,9 @@ classdef Software_SC_Control_Attitude < handle
                 func_update_instantaneous_data_generated(mission.true_SC{i_SC}.true_SC_data_handling, obj, mission);
             end
 
+            % Compute Error Angle between desired_attitude and estimated attitude
+            obj.error_angle_desired_attitude = func_error_angle_between_quaternions(obj.desired_attitude, mission.true_SC{i_SC}.software_SC_estimate_attitude.attitude); % [rad]
+
             % Update Storage
             obj = func_update_software_SC_control_attitude_store(obj, mission);
 

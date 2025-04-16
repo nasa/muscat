@@ -17,9 +17,9 @@ obj.flag_executive = 0;
 
 % Add: Clear pending thruster commands
 for i_thruster = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster
-    if mission.true_SC{i_SC}.true_SC_chemical_thruster(i_thruster).health
-        mission.true_SC{i_SC}.true_SC_chemical_thruster(i_thruster).pending_fire = false;
-        mission.true_SC{i_SC}.true_SC_chemical_thruster(i_thruster).pending_thrust = 0;
+    if mission.true_SC{i_SC}.true_SC_chemical_thruster{i_thruster}.health
+        mission.true_SC{i_SC}.true_SC_chemical_thruster{i_thruster}.pending_fire = false;
+        mission.true_SC{i_SC}.true_SC_chemical_thruster{i_thruster}.pending_thrust = 0;
     end
 end
 end

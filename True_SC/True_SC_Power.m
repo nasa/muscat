@@ -270,7 +270,7 @@ classdef True_SC_Power < handle
 
         function obj = func_update_instantaneous_power_consumed(obj, equipment, mission)
             
-            obj.instantaneous_total_power_consumed = obj.instantaneous_total_power_consumed + equipment.instantaneous_power_consumed * (1 + obj.power_loss_rate); % [W]
+            obj.instantaneous_total_power_consumed = obj.instantaneous_total_power_consumed + ( equipment.instantaneous_power_consumed * (1 + obj.power_loss_rate) ); % [W]        
 
             this_name = equipment.name;
             flag_name_exists = 0;
@@ -295,7 +295,7 @@ classdef True_SC_Power < handle
         % Updates instantaneous_power_consumed by all HW, within ADL
 
         function obj = func_update_instantaneous_power_consumed_attitude(obj, equipment, mission)
-            obj.instantaneous_total_power_consumed = obj.instantaneous_total_power_consumed + equipment.instantaneous_power_consumed*(mission.true_time.time_step_attitude/mission.true_time.time_step); % [W]
+            obj.instantaneous_total_power_consumed = obj.instantaneous_total_power_consumed + ( equipment.instantaneous_power_consumed * (1 + obj.power_loss_rate) * (mission.true_time.time_step_attitude/mission.true_time.time_step) ); % [W]
 
             this_name = equipment.name;
             flag_name_exists = 0;

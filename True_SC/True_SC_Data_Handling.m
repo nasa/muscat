@@ -321,7 +321,7 @@ classdef True_SC_Data_Handling < handle
             end
 
             if flag_name_exisits == 0
-                error('HW not found!')
+                error('HW SW not found!')
             else
                 obj.array_HW_data_generated(1,this_idx) = obj.array_HW_data_generated(1,this_idx) + this_instantaneous_data_generated; % [kb]
             end
@@ -362,7 +362,7 @@ classdef True_SC_Data_Handling < handle
             end
 
             if flag_name_exisits == 0
-                error('HW not found!')
+                error('HW SW not found!')
             else
                 obj.array_HW_data_generated(1,this_idx) = obj.array_HW_data_generated(1,this_idx) + this_instantaneous_data_generated; % [kb]
             end
@@ -404,7 +404,7 @@ classdef True_SC_Data_Handling < handle
             end
 
             if flag_name_exisits == 0
-                error('HW not found!')
+                error('HW SW not found!')
             else
                 obj.array_HW_data_removed(1,this_idx) = obj.array_HW_data_removed(1,this_idx) + this_instantaneous_data_removed; % [kb]
             end

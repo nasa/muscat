@@ -121,10 +121,12 @@ For Windows users, we recommend:
 Now we are ready to run the mission files. 
 
 1. Ensure that Matlab base directory is `XYZ > muscat`
-2. Open in Matlab the mission file named 'Mission_DART.m' in `XYZ > muscat > Mission` 
+2. Open in Matlab the mission file named `Mission_DART.m` in `XYZ > muscat > Mission` 
 3. Click `Run`
 
 The code should run out of the box! Read the next section for expected results.
+
+Tip: To make the code run fast, switch off visualization by setting line 45 in `Mission_DART.m`  to `init_data.flag_realtime_plotting = 0`.
 
 ---
 

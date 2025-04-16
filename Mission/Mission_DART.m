@@ -39,10 +39,10 @@ mission.true_time = True_Time(init_data);
 %% Storage Configuration
 
 init_data = [];
-init_data.time_step_storage = 1;
-init_data.time_step_storage_attitude = 0.5;
+init_data.time_step_storage = 0;
+init_data.time_step_storage_attitude = 0;
 init_data.flag_visualize_SC_attitude_orbit_during_sim = 0;  % [Boolean] Show attitude during sim
-init_data.flag_realtime_plotting = 0;      % [Boolean] Show mission data and attitude during sim
+init_data.flag_realtime_plotting = 1;      % [Boolean] Show mission data and attitude during sim
 init_data.flag_save_plots = 1;             % [Boolean] 1: Save them (takes little time), 0: Doesnt save them
 init_data.flag_save_video = 0;             % [Boolean] 1: Save them (takes more time), 0: Doesnt save them
 mission.storage = Storage(init_data, mission);
@@ -658,27 +658,29 @@ end
 
 
 %% Chemical Thruster Configuration
-init_data = [];
-i_HW = mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster;
+for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster
 
-% Power and data parameters
-init_data.instantaneous_power_consumption = 2.0;        % [W] Base power draw (standby)
-init_data.thruster_warm_up_power_consumed = 5.0;        % [W] Power during warm-up phase
-init_data.command_actuation_power_consumed = 15.0;      % [W] Power during active thrust
-init_data.instantaneous_data_generated_per_sample = 10; % [kb] per sample
-init_data.chemical_thruster_noise = 10e-4;              % [N] Thrust noise level
+    init_data = [];
 
-% Thruster properties
-init_data.chemical_thruster_ISP = 200;                 % [s] Specific impulse
-init_data.command_wait_time = 1;                       % [s] Minimum time between commands
-init_data.location = [0.3, 0.2/2, 0.1/2];                % [m] Thruster location in body frame
-init_data.orientation = [-1, 0, 0];                     % Thrust direction (unit vector)
+    % Power and data parameters
+    init_data.instantaneous_power_consumption = 2.0;        % [W] Base power draw (standby)
+    init_data.thruster_warm_up_power_consumed = 5.0;        % [W] Power during warm-up phase
+    init_data.command_actuation_power_consumed = 15.0;      % [W] Power during active thrust
+    init_data.instantaneous_data_generated_per_sample = 10; % [kb] per sample
+    init_data.chemical_thruster_noise = 10e-4;              % [N] Thrust noise level
 
-init_data.maximum_thrust = 1;                          % [N] Maximum thrust level
-init_data.minimum_thrust = 0.01;                       % [N] Minimum thrust level
- 
-% Create chemical thruster object
-mission.true_SC{i_SC}.true_SC_chemical_thruster = True_SC_Chemical_Thruster(init_data, mission, i_SC, i_HW);
+    % Thruster properties
+    init_data.chemical_thruster_ISP = 200;                 % [s] Specific impulse
+    init_data.command_wait_time = 1;                       % [s] Minimum time between commands
+    init_data.location = [0.3, 0.2/2, 0.1/2];                % [m] Thruster location in body frame
+    init_data.orientation = [-1, 0, 0];                     % Thrust direction (unit vector)
+
+    init_data.maximum_thrust = 1;                          % [N] Maximum thrust level
+    init_data.minimum_thrust = 0.01;                       % [N] Minimum thrust level
+
+    % Create chemical thruster object
+    mission.true_SC{i_SC}.true_SC_chemical_thruster{i_HW} = True_SC_Chemical_Thruster(init_data, mission, i_SC, i_HW);
+end
 
 %% Onboard Computer Configuration
 for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_onboard_computer

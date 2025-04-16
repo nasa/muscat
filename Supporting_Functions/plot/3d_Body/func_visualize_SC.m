@@ -560,7 +560,7 @@ for i_SC = 1:1:mission.num_SC
     if isfield(mission.true_SC{i_SC}.true_SC_body.num_hardware_exists, 'num_chemical_thruster') && ...
        mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster > 0
         for i_ct = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster
-            CT = mission.true_SC{i_SC}.true_SC_chemical_thruster(i_ct);
+            CT = mission.true_SC{i_SC}.true_SC_chemical_thruster{i_ct};
             
             % Apply attitude transformation to thruster location and orientation
             location = CT.location;

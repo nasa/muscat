@@ -26,9 +26,6 @@ classdef Software_SC_Executive < handle
         this_sc_mode % [string] : Current SC mode
         this_sc_mode_value % [integer] : Current SC mode
 
-        compute_time % [sec] SC time when this measurement was taken
-        time_SB_visible % [sec]
-
         data % Other useful data
 
         %% [ ] Properties: Storage Variables
@@ -67,8 +64,6 @@ classdef Software_SC_Executive < handle
             else
                 obj.compute_wait_time = 0; % [sec]
             end
-
-            obj.compute_time = -inf; % [sec]
 
             % Initialize Variables to store: this_sc_mode_value time date data
             obj.store = [];

@@ -72,8 +72,8 @@ g0 = 9.80665; % m/s^2
 total_isp = 0;
 num_thrusters = 0;
 for i_thruster = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster
-    if mission.true_SC{i_SC}.true_SC_chemical_thruster(i_thruster).health
-        total_isp = total_isp + mission.true_SC{i_SC}.true_SC_chemical_thruster(i_thruster).isp;
+    if mission.true_SC{i_SC}.true_SC_chemical_thruster{i_thruster}.health
+        total_isp = total_isp + mission.true_SC{i_SC}.true_SC_chemical_thruster{i_thruster}.isp;
         num_thrusters = num_thrusters + 1;
     end
 end
