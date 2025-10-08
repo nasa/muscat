@@ -66,6 +66,10 @@ classdef Software_SC_Control_Orbit < handle
         desired_attitude_for_DeltaV_achieved % [boolean]: Attitude flag for Delta-V execution
         desired_DeltaV_achieved % [boolean]: Whether Delta-V has been achieved
 
+        desried_attitude_for_hovering_achieved % [boolean]
+
+        deflection_force_computed % Force exerted ON the target
+
         % Desired trajectory details
         desired_time_array % [sec]: Array of planned trajectory times
         desired_SC_pos_vel_current_SBcentered % [km, km/s]: Desired spacecraft state in small body frame
@@ -148,6 +152,8 @@ classdef Software_SC_Control_Orbit < handle
             obj.store.flag_insufficient_fuel = zeros(mission.storage.num_storage_steps_attitude, 1);
             obj.store.estimated_fuel_required = zeros(mission.storage.num_storage_steps_attitude, 1);
 
+            obj.store.deflection_force_computed = zeros(mission.storage.num_storage_steps_attitude, 3);
+
             obj.desired_DeltaV_achieved = 0;
             obj.total_DeltaV_executed = [0 0 0]'; % [m/sec]
             obj.desired_attitude_for_DeltaV_achieved = 0;
@@ -202,6 +208,9 @@ classdef Software_SC_Control_Orbit < handle
 
                     case 'DART'
                         obj = func_update_software_SC_control_orbit_DART(obj, mission, i_SC);
+                    
+                    case 'IBEAM'
+                        obj = func_update_software_SC_control_orbit_IBEAM(obj, mission, i_SC);
 
                     case 'Inactive'
                         % Do nothing!

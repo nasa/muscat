@@ -26,3 +26,4 @@ num_hardware_exists.num_generic_sensor = 0;
 num_hardware_exists.num_science_processor = 0;
 num_hardware_exists.num_fuel_tank = 0;
 num_hardware_exists.num_onboard_computer = 0;
+num_hardware_exists.num_remote_sensing = 0;

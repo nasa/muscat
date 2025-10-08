@@ -28,6 +28,8 @@ classdef True_SC_Onboard_Memory < handle
 
         state_of_data_storage % [percentage] : SoDS is defined by = 100× instantaneous_capacity / maximum_capacity
 
+        data % Other useful data
+
         %% [ ] Properties: Storage Variables
 
         store
@@ -58,6 +60,12 @@ classdef True_SC_Onboard_Memory < handle
             obj.maximum_capacity = init_data.maximum_capacity; % [kb]
             obj.instantaneous_capacity = 0; % [kb]
             obj.state_of_data_storage = 100*obj.instantaneous_capacity/obj.maximum_capacity; % [percentage]
+
+            if isfield(init_data, 'data')
+                obj.data = init_data.data;
+            else
+                obj.data = [];
+            end
 
             % Initialize Variables to store: instantaneous_capacity state_of_charge
             obj.store = [];
@@ -101,11 +109,25 @@ classdef True_SC_Onboard_Memory < handle
 
             obj = func_update_true_SC_onboard_memory_store(obj, mission);
 
+            if isfield(obj.data, 'instantaneous_power_consumed_per_SC_mode')
+                obj.instantaneous_power_consumed = obj.data.instantaneous_power_consumed_per_SC_mode(mission.true_SC{i_SC}.software_SC_executive.this_sc_mode_value); % [W]
+
+                % Update power value for Slew only
+                if (mission.true_SC{i_SC}.software_SC_executive.flag_slew_sc_mode_exists == 1) && (mission.true_SC{i_SC}.software_SC_control_attitude.flag_slew == 1)
+                    obj.instantaneous_power_consumed = obj.data.instantaneous_power_consumed_per_SC_mode( func_find_this_sc_mode_value(mission.true_SC{i_SC}.software_SC_executive, 'Slew') ); % [W]
+                end
+            end
+
             % Update Power Consumed
             func_update_instantaneous_power_consumed(mission.true_SC{i_SC}.true_SC_power, obj, mission);
 
             % Update Data Generated
             func_update_instantaneous_data_generated(mission.true_SC{i_SC}.true_SC_data_handling, obj, mission);
+
+            % Check Memory is Non-negative
+            if obj.instantaneous_capacity < 0
+                error('Data in memory is negative!')
+            end
 
         end
 

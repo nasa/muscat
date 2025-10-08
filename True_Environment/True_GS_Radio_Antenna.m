@@ -45,6 +45,12 @@ classdef True_GS_Radio_Antenna < handle
 
         instantaneous_data_rate_received % [kbps] : Data rate, in kilo bits per sec (kbps) due to TX
 
+        latitude % [deg] between [-90 to 90]
+
+        longitude % [deg] between [-180 to 180] (East is positive, West is negative)
+
+        position % [km] position on Earth's surface
+
         data % Other useful data
 
         %% [ ] Properties: Storage Variables
@@ -86,6 +92,17 @@ classdef True_GS_Radio_Antenna < handle
 
             obj.instantaneous_data_rate_transmitted = 0; % [kbps]
             obj.instantaneous_data_rate_received = 0; % [kbps]
+
+            if isfield(init_data, 'latitude') && isfield(init_data, 'longitude')
+                obj.latitude = init_data.latitude; % [deg]
+                obj.longitude = init_data.longitude; % [deg]
+
+                if strcmp(mission.true_target{1}.name, 'Earth')
+                    obj.position = cspice_latrec(mission.true_target{1}.radius, deg2rad(obj.longitude), deg2rad(obj.latitude))'; % [km]
+                end
+            end
+
+
 
             if isfield(init_data, 'data')
                 obj.data = init_data.data;

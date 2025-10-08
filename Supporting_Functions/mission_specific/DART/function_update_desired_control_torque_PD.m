@@ -28,7 +28,12 @@ Zbeta = zeros(4,3);
 Zbeta(1:3,1:3) =  beta_est(4) * eye(3) + skew(beta_est(1:3));
 Zbeta(4,  1:3) = -beta_est(1:3)';
 
-delta_theta = ( pinv(Zbeta) * (beta_desired - beta_est)')';
+if func_error_angle_between_quaternions(beta_desired, beta_est) < 4 % [rad]
+    delta_theta = ( pinv(Zbeta) * (beta_desired - beta_est)')';
+else
+    % Use shadow desired quaternion
+    delta_theta = ( pinv(Zbeta) * (-beta_desired - beta_est)')';
+end
 
 
 % Calculate control torques

@@ -80,13 +80,13 @@ subplot(nb_row, nb_col, 2);
 hold on;
 
 % Check for different disturbance sources and if they're enabled
-has_SRP = isfield(mission.true_SC{i_SC}, 'true_SRP') && ...
-    mission.true_SC{i_SC}.true_SRP.enable_SRP == 1 && ...
-    isfield(mission.true_SC{i_SC}.true_SRP.store, 'disturbance_torque_SRP');
+has_SRP = isfield(mission.true_SC{i_SC}, 'true_SC_SRP') && ...
+    mission.true_SC{i_SC}.true_SC_SRP.enable_SRP == 1 && ...
+    isfield(mission.true_SC{i_SC}.true_SC_SRP.store, 'disturbance_torque_SRP');
 
-has_G2 = isfield(mission.true_SC{i_SC}, 'true_gravity_gradient') && ...
-    mission.true_SC{i_SC}.true_gravity_gradient.enable_G2 == 1 && ...
-    isfield(mission.true_SC{i_SC}.true_gravity_gradient.store, 'disturbance_torque_G2');
+has_G2 = isfield(mission.true_SC{i_SC}, 'true_SC_gravity_gradient') && ...
+    mission.true_SC{i_SC}.true_SC_gravity_gradient.enable_G2 == 1 && ...
+    isfield(mission.true_SC{i_SC}.true_SC_gravity_gradient.store, 'disturbance_torque_G2');
 
 has_chemical_thruster = isfield(mission.true_SC{i_SC}, 'true_SC_chemical_thruster') && ...
     mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster > 0;
@@ -106,13 +106,13 @@ if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isfield(mission.true_SC{i_SC
         % 1. SRP components
         if has_SRP
             % Get the number of data points available for SRP torque
-            srp_data_length = min(dist_data_length, size(mission.true_SC{i_SC}.true_SRP.store.disturbance_torque_SRP, 1));
+            srp_data_length = min(dist_data_length, size(mission.true_SC{i_SC}.true_SC_SRP.store.disturbance_torque_SRP, 1));
 
             if srp_data_length > 0
                 % Plot each component of SRP disturbance torque
                 for axis = 1:3
                     plot(mission.true_time.store.time(1:srp_data_length), ...
-                        mission.true_SC{i_SC}.true_SRP.store.disturbance_torque_SRP(1:srp_data_length, axis), ...
+                        mission.true_SC{i_SC}.true_SC_SRP.store.disturbance_torque_SRP(1:srp_data_length, axis), ...
                         line_styles{1}, 'LineWidth', 1.5, 'Color', colors{axis}, ...
                         'DisplayName', ['SRP-' axis_names{axis}]);
                 end
@@ -122,13 +122,13 @@ if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isfield(mission.true_SC{i_SC
         % 2. Gravity Gradient components
         if has_G2
             % Get the number of data points available for gravity gradient torque
-            g2_data_length = min(dist_data_length, size(mission.true_SC{i_SC}.true_gravity_gradient.store.disturbance_torque_G2, 1));
+            g2_data_length = min(dist_data_length, size(mission.true_SC{i_SC}.true_SC_gravity_gradient.store.disturbance_torque_G2, 1));
 
             if g2_data_length > 0
                 % Plot each component of Gravity Gradient disturbance torque
                 for axis = 1:3
                     plot(mission.true_time.store.time(1:g2_data_length), ...
-                        mission.true_SC{i_SC}.true_gravity_gradient.store.disturbance_torque_G2(1:g2_data_length, axis), ...
+                        mission.true_SC{i_SC}.true_SC_gravity_gradient.store.disturbance_torque_G2(1:g2_data_length, axis), ...
                         line_styles{2}, 'LineWidth', 1.5, 'Color', colors{axis}, ...
                         'DisplayName', ['GG-' axis_names{axis}]);
                 end
@@ -221,11 +221,11 @@ if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isfield(mission.true_SC{i_SC
 
         % Collect all data for determining y-axis limits
         if has_SRP && exist('srp_data_length', 'var') && srp_data_length > 0
-            all_data = [all_data; abs(reshape(mission.true_SC{i_SC}.true_SRP.store.disturbance_torque_SRP(1:srp_data_length,:), [], 1))];
+            all_data = [all_data; abs(reshape(mission.true_SC{i_SC}.true_SC_SRP.store.disturbance_torque_SRP(1:srp_data_length,:), [], 1))];
         end
 
         if has_G2 && exist('g2_data_length', 'var') && g2_data_length > 0
-            all_data = [all_data; abs(reshape(mission.true_SC{i_SC}.true_gravity_gradient.store.disturbance_torque_G2(1:g2_data_length,:), [], 1))];
+            all_data = [all_data; abs(reshape(mission.true_SC{i_SC}.true_SC_gravity_gradient.store.disturbance_torque_G2(1:g2_data_length,:), [], 1))];
         end
 
         if has_chemical_thruster && exist('ct_torque', 'var') && exist('nonzero_indices', 'var') && ~isempty(nonzero_indices)

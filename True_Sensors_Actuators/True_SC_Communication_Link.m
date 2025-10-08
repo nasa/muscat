@@ -1,8 +1,8 @@
 %% Class: True_SC_Communication_Link
 % Tracks the Links between Radio Antennas
 
-classdef True_SC_Communication_Link < handle    
-    
+classdef True_SC_Communication_Link < handle
+
     %% Properties
     properties
 
@@ -13,16 +13,18 @@ classdef True_SC_Communication_Link < handle
 
         RX_spacecraft % [integer] Use O for Ground Station
         RX_spacecraft_Radio_HW % [integer]
-            
+
         % TODO - Decide if this is should stay here or go to software comm
-        wait_time_comm_dte % [sec] : Wait time without transmiting to earth. This is a constant. 
-        last_communication_time % [sec] : Last time that data has been sent. This is updated in SC_Executive 
+        wait_time_comm_dte % [sec] : Wait time without transmiting to earth. This is a constant.
+        last_communication_time % [sec] : Last time that data has been sent. This is updated in SC_Executive
 
         flag_compute_data_rate % [Boolean]
 
-        given_data_rate % [kbps]        
+        given_data_rate % [kbps]
 
         instantaneous_power_consumed % [Watts] : Communication Link control overhead power consumption
+
+        mode_true_SC_communication_link_selector % [string]
 
         %% [ ] Properties: Variables Computed Internally
 
@@ -32,7 +34,7 @@ classdef True_SC_Communication_Link < handle
 
         RX_name % [string]
 
-        this_data_rate % [kbps] Actually used in simulation       
+        this_data_rate % [kbps] Actually used in simulation
 
         flag_executive % [Boolean] Executive has told this sensor/actuator to do its job
 
@@ -41,9 +43,9 @@ classdef True_SC_Communication_Link < handle
         %% [ ] Properties: Storage Variables
 
         store
-        
+
     end
-    
+
     %% Methods
     methods
 
@@ -59,22 +61,24 @@ classdef True_SC_Communication_Link < handle
             end
 
             obj.flag_executive = 0;
-            obj.flag_TX_RX_visible = 0; 
+            obj.flag_TX_RX_visible = 0;
 
             obj.TX_spacecraft = init_data.TX_spacecraft;
             obj.TX_spacecraft_Radio_HW = init_data.TX_spacecraft_Radio_HW;
 
-            obj.RX_spacecraft = init_data.RX_spacecraft; 
-            obj.RX_spacecraft_Radio_HW = init_data.RX_spacecraft_Radio_HW; 
+            obj.RX_spacecraft = init_data.RX_spacecraft;
+            obj.RX_spacecraft_Radio_HW = init_data.RX_spacecraft_Radio_HW;
 
-            obj.flag_compute_data_rate = init_data.flag_compute_data_rate; 
-            obj.given_data_rate = init_data.given_data_rate; % [kbps] 
+            obj.flag_compute_data_rate = init_data.flag_compute_data_rate;
+            obj.given_data_rate = init_data.given_data_rate; % [kbps]
+
+            obj.mode_true_SC_communication_link_selector = init_data.mode_true_SC_communication_link_selector;
 
             % Initialize the power consumption property
             if isfield(init_data, 'instantaneous_power_consumed')
                 obj.instantaneous_power_consumed = init_data.instantaneous_power_consumed;
             else
-                obj.instantaneous_power_consumed = 0.5; % Default low power for link control overhead
+                obj.instantaneous_power_consumed = 0.5; % [W] Default low power for link control overhead
             end
 
             if obj.flag_compute_data_rate == 1
@@ -151,10 +155,35 @@ classdef True_SC_Communication_Link < handle
 
         function obj = func_main_true_SC_communication_link(obj, mission, i_SC)
 
-            % Check Link Visibility 
+            switch obj.mode_true_SC_communication_link_selector
+
+                case 'Generic'
+                    obj = func_communication_link_generic(obj, mission, i_SC);
+
+                case 'GoldenDome'
+                    obj = func_communication_link_GoldenDome(obj, mission, i_SC);
+
+                otherwise
+                    error('Comm Link not defined!')
+            end
+
+
+            % Update Storage
+            obj = func_update_true_SC_communication_link_store(obj, mission);
+
+            % Reset All Variables
+            obj.flag_executive = 0;
+
+        end
+
+        %% [ ] Methods: Generic Communication Link
+
+        function obj = func_communication_link_generic(obj, mission, i_SC)
+
+            % Check Link Visibility
             if obj.TX_spacecraft == 0
                 obj.flag_TX_RX_visible = mission.true_SC{obj.RX_spacecraft}.true_SC_navigation.flag_visible_Earth;
-                
+
             elseif obj.RX_spacecraft == 0
                 obj.flag_TX_RX_visible = mission.true_SC{obj.TX_spacecraft}.true_SC_navigation.flag_visible_Earth;
 
@@ -248,20 +277,14 @@ classdef True_SC_Communication_Link < handle
                         rx_antenna.instantaneous_data_rate_generated = obj.this_data_rate; % [kbps]
                     end
                 end
-                
+
                 % Update power consumption for this link's control overhead
                 if i_SC > 0
                     func_update_instantaneous_power_consumed(mission.true_SC{i_SC}.true_SC_power, obj, mission);
                 end
             end
 
-            % Update Storage
-            obj = func_update_true_SC_communication_link_store(obj, mission);
-
-            % Reset All Variables
-            obj.flag_executive = 0;
-
         end
-        
+
     end
 end

@@ -26,7 +26,8 @@ classdef True_SC_Data_Handling < handle
 
         array_HW_data_removed % [kb] Total data removed by this HW and Class
 
-        warning_counter % [integer] Counter stops the warning after 10 displays
+        warning_counter_full % [integer] Counter stops the warning after 10 displays
+        warning_counter_empty % [integer] Counter stops the warning after 10 displays
 
         data % Other useful data
 
@@ -56,7 +57,8 @@ classdef True_SC_Data_Handling < handle
             obj.list_HW_data_removed = [];
             obj.array_HW_data_removed = [];
 
-            obj.warning_counter = 0;
+            obj.warning_counter_full = 0;
+            obj.warning_counter_empty = 0;
 
             if isfield(init_data, 'data')
                 obj.data = init_data.data;
@@ -232,17 +234,17 @@ classdef True_SC_Data_Handling < handle
 
                 end
 
-                if obj.instantaneous_data_change > 0
+                if (obj.instantaneous_data_change > 0) 
 
-                    if obj.warning_counter < 10
-                        warning('All Memories are Full!')
-                        obj.warning_counter = obj.warning_counter + 1;
+                    obj.warning_counter_full = obj.warning_counter_full + 1;
+                    if obj.warning_counter_full < 10
+                        warning('All Memories are Full!')                        
                     end
 
                     mission.true_SC{i_SC}.true_SC_onboard_memory{i_memory}.instantaneous_capacity = mission.true_SC{i_SC}.true_SC_onboard_memory{i_memory}.instantaneous_capacity + obj.instantaneous_data_change; % [kb]
                     obj.instantaneous_data_change = 0; % [kb]
                 else
-                    obj.warning_counter = 0;
+                    obj.warning_counter_full = 0;
                 end
 
 
@@ -270,15 +272,15 @@ classdef True_SC_Data_Handling < handle
 
                 if obj.instantaneous_data_change < 0
 
-                    if obj.warning_counter < 10
+                    if obj.warning_counter_empty < 10
                         warning('All Memories are Empty!')
-                        obj.warning_counter = obj.warning_counter + 1;
+                        obj.warning_counter_empty = obj.warning_counter_empty + 1;
                     end
 
                     mission.true_SC{i_SC}.true_SC_onboard_memory{i_memory}.instantaneous_capacity = mission.true_SC{i_SC}.true_SC_onboard_memory{i_memory}.instantaneous_capacity + obj.instantaneous_data_change; % [kb]
                     obj.instantaneous_data_change = 0; % [kb]
                 else
-                    obj.warning_counter = 0;
+                    obj.warning_counter_empty = 0;
                 end
 
             end

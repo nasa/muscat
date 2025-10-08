@@ -118,5 +118,5 @@ obj.this_sc_mode = 'Point camera to Target';
 mission.true_SC{i_SC}.true_SC_camera{1}.flag_executive = 1; % Activate primary camera
 mission.true_SC{i_SC}.software_SC_estimate_orbit.flag_executive = 1; % Regular updates
 
-%% Update Mode Value
+
 end

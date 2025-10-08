@@ -140,10 +140,16 @@ classdef True_SC_ADC < handle
         function obj = func_update_true_SC_ADC_rotation_matrix(obj)
 
             % Compute Rotation Matrix
-            SC_True_e_current = obj.attitude(1:3)/norm(obj.attitude(1:3));
-            SC_True_Phi_current = 2*acos(obj.attitude(4)); % [rad]
-            obj.rotation_matrix = func_create_rotation_matrix(SC_True_e_current, SC_True_Phi_current);
+            if norm(obj.attitude(1:3)) > 0
+                
+                SC_True_e_current = obj.attitude(1:3)/norm(obj.attitude(1:3));
+                SC_True_Phi_current = 2*acos(obj.attitude(4)); % [rad]
+                obj.rotation_matrix = func_create_rotation_matrix(SC_True_e_current, SC_True_Phi_current);
 
+            else
+                obj.rotation_matrix = eye(3,3);
+
+            end
         end
 
         %% [ ] Methods: Rigid Attitude Dynamics

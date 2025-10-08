@@ -109,6 +109,11 @@ classdef True_SC_Battery < handle
             % Update Data Generated
             func_update_instantaneous_data_generated(mission.true_SC{i_SC}.true_SC_data_handling, obj, mission);
 
+            % Check Battery is Non-negative
+            if obj.instantaneous_capacity < 0
+                error('Battery SoC is negative!')
+            end
+
         end
 
     end

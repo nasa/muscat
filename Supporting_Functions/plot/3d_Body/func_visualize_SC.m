@@ -15,7 +15,7 @@ if is_realtime_update
     plot_handle = findobj('Type', 'figure', 'Tag', fig_tag);
     if isempty(plot_handle)
         % Create new figure if not found
-        plot_handle = figure();
+        plot_handle = figure('Name','Mission Dashboard');
         set(plot_handle, 'Tag', fig_tag);
     else
         % Use existing figure
@@ -25,7 +25,7 @@ if is_realtime_update
     end
 else
     % Create new figure for non-realtime use
-    plot_handle = figure();
+    plot_handle = figure('Name','Mission Dashboard');
     set(plot_handle, 'Tag', fig_tag);
 end
 
@@ -46,25 +46,25 @@ end
 for i_SC = 1:1:mission.num_SC
     subplot(1,mission.num_SC,i_SC)
     hold on
-    
+
     % Debug rotation - verify that attitude data exists and is being updated
     has_attitude = isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isprop(mission.true_SC{i_SC}.true_SC_adc, 'rotation_matrix');
     if ~has_attitude
         warning('Spacecraft %d does not have attitude data. Objects will not rotate.', i_SC);
     end
-    
+
 
     % Main body visualization with attitude transformation
     for i_shape = 1:length(mission.true_SC{i_SC}.true_SC_body.shape_model)
         % Get original vertices
         this_Vertices = mission.true_SC{i_SC}.true_SC_body.shape_model{i_shape}.Vertices;
-        
+
         % Apply attitude rotation if available
         if has_attitude
             % Apply rotation matrix to vertices relative to COM
             this_Vertices = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * (this_Vertices - mission.true_SC{i_SC}.true_SC_body.location_COM)' )' + mission.true_SC{i_SC}.true_SC_body.location_COM;
         end
-        
+
         % Draw the transformed body
         h_body = trisurf(mission.true_SC{i_SC}.true_SC_body.shape_model{i_shape}.Faces, ...
             this_Vertices(:,1), ...
@@ -78,13 +78,13 @@ for i_SC = 1:1:mission.num_SC
     for i_SP = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_solar_panel
         % Get original vertices
         this_Vertices = mission.true_SC{i_SC}.true_SC_solar_panel{i_SP}.shape_model.Vertices;
-        
+
         % Apply attitude rotation if available
         if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isprop(mission.true_SC{i_SC}.true_SC_adc, 'rotation_matrix')
             % Apply rotation matrix to vertices relative to COM
             this_Vertices = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * (this_Vertices - mission.true_SC{i_SC}.true_SC_body.location_COM)' )' + mission.true_SC{i_SC}.true_SC_body.location_COM;
         end
-        
+
         h_sp = trisurf(mission.true_SC{i_SC}.true_SC_solar_panel{i_SP}.shape_model.Faces, ...
             this_Vertices(:,1), ...
             this_Vertices(:,2), ...
@@ -96,13 +96,13 @@ for i_SC = 1:1:mission.num_SC
         for i_face = 1:1:size(mission.true_SC{i_SC}.true_SC_solar_panel{i_SP}.shape_model.Faces,1)
             face_center = mission.true_SC{i_SC}.true_SC_solar_panel{i_SP}.shape_model.Face_center(i_face,:);
             face_orientation = mission.true_SC{i_SC}.true_SC_solar_panel{i_SP}.shape_model.Face_orientation_solar_cell_side(1,:);
-            
+
             % Apply rotation to face center and orientation if attitude is available
             if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isprop(mission.true_SC{i_SC}.true_SC_adc, 'rotation_matrix')
                 face_center = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * (face_center - mission.true_SC{i_SC}.true_SC_body.location_COM)' )' + mission.true_SC{i_SC}.true_SC_body.location_COM;
                 face_orientation = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * face_orientation')';
             end
-            
+
             q = quiver3(face_center(1), ...
                 face_center(2), ...
                 face_center(3), ...
@@ -120,19 +120,19 @@ for i_SC = 1:1:mission.num_SC
         for i_camera = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_camera
             camera = mission.true_SC{i_SC}.true_SC_camera{i_camera};
             camera_size = 0.04;
-            
+
             % Apply attitude transformation to camera location and orientation
             base_center = camera.location;
             cam_dir = camera.orientation / norm(camera.orientation);
             cam_up = camera.orientation_up / norm(camera.orientation_up);
-            
+
             % Apply attitude rotation if available
             if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isprop(mission.true_SC{i_SC}.true_SC_adc, 'rotation_matrix')
                 base_center = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * (base_center - mission.true_SC{i_SC}.true_SC_body.location_COM)' )' + mission.true_SC{i_SC}.true_SC_body.location_COM;
                 cam_dir = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * cam_dir')';
                 cam_up = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * cam_up')';
             end
-            
+
             cam_right = cross(cam_dir, cam_up);
 
             % Create camera box vertices and faces with the transformed orientation
@@ -175,17 +175,17 @@ for i_SC = 1:1:mission.num_SC
             st = mission.true_SC{i_SC}.true_SC_star_tracker{i_st};
             st_radius = 0.025;
             st_length = 0.06;
-            
+
             % Apply attitude transformation to star tracker location and orientation
             st_location = st.location;
             st_orientation = st.orientation / norm(st.orientation);
-            
+
             % Apply attitude rotation if available
             if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isprop(mission.true_SC{i_SC}.true_SC_adc, 'rotation_matrix')
                 st_location = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * (st_location - mission.true_SC{i_SC}.true_SC_body.location_COM)' )' + mission.true_SC{i_SC}.true_SC_body.location_COM;
                 st_orientation = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * st_orientation')';
             end
-            
+
             [X,Y,Z] = cylinder(st_radius, 12);
             Z = Z * st_length;
 
@@ -232,17 +232,17 @@ for i_SC = 1:1:mission.num_SC
             ss = mission.true_SC{i_SC}.true_SC_sun_sensor{i_ss};
             ss_radius = 0.02;
             ss_thickness = 0.01;
-            
+
             % Apply attitude transformation to sun sensor location and orientation
             ss_location = ss.location;
             ss_orientation = ss.orientation / norm(ss.orientation);
-            
+
             % Apply attitude rotation if available
             if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isprop(mission.true_SC{i_SC}.true_SC_adc, 'rotation_matrix')
                 ss_location = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * (ss_location - mission.true_SC{i_SC}.true_SC_body.location_COM)' )' + mission.true_SC{i_SC}.true_SC_body.location_COM;
                 ss_orientation = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * ss_orientation')';
             end
-            
+
             [X,Y,Z] = cylinder(ss_radius, 12);
             Z = Z * ss_thickness;
 
@@ -289,17 +289,17 @@ for i_SC = 1:1:mission.num_SC
             radar = mission.true_SC{i_SC}.true_SC_science_radar{i_radar};
             radar_radius = 0.05;
             radar_length = 0.07;
-            
+
             % Apply attitude transformation to radar location and orientation
             radar_location = radar.location;
             radar_orientation = radar.orientation / norm(radar.orientation);
-            
+
             % Apply attitude rotation if available
             if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isprop(mission.true_SC{i_SC}.true_SC_adc, 'rotation_matrix')
                 radar_location = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * (radar_location - mission.true_SC{i_SC}.true_SC_body.location_COM)' )' + mission.true_SC{i_SC}.true_SC_body.location_COM;
                 radar_orientation = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * radar_orientation')';
             end
-            
+
             [X,Y,Z] = cylinder(radar_radius, 16);
             Z = Z * radar_length;
 
@@ -361,13 +361,13 @@ for i_SC = 1:1:mission.num_SC
             end
 
             antenna_orientation = mission.true_SC{i_SC}.true_SC_radio_antenna{i_ra}.orientation;
-            
+
             % Apply attitude rotation if available
             if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isprop(mission.true_SC{i_SC}.true_SC_adc, 'rotation_matrix')
                 antenna_position = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * (antenna_position - mission.true_SC{i_SC}.true_SC_body.location_COM)' )' + mission.true_SC{i_SC}.true_SC_body.location_COM;
                 antenna_orientation = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * antenna_orientation')';
             end
-            
+
             [X,Y,Z] = cylinder([0.02, 0.01], 12);
             base_length = 0.08;
             Z = Z * base_length;
@@ -424,11 +424,11 @@ for i_SC = 1:1:mission.num_SC
             RW = mission.true_SC{i_SC}.true_SC_reaction_wheel{i_rw};
             wheel_radius = RW.radius;
             wheel_thickness = wheel_radius * 0.4;
-            
+
             % Apply attitude transformation to wheel location and orientation
             location = RW.location;
             orientation = RW.orientation / norm(RW.orientation);
-            
+
             % Apply attitude rotation if available
             if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isprop(mission.true_SC{i_SC}.true_SC_adc, 'rotation_matrix')
                 location = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * (location - mission.true_SC{i_SC}.true_SC_body.location_COM)' )' + mission.true_SC{i_SC}.true_SC_body.location_COM;
@@ -481,17 +481,17 @@ for i_SC = 1:1:mission.num_SC
     if mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_micro_thruster > 0
         for i_mt = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_micro_thruster
             MT = mission.true_SC{i_SC}.true_SC_micro_thruster{i_mt};
-            
+
             % Apply attitude transformation to thruster location and orientation
             location = MT.location;
             orientation = MT.orientation / norm(MT.orientation);
-            
+
             % Apply attitude rotation if available
             if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isprop(mission.true_SC{i_SC}.true_SC_adc, 'rotation_matrix')
                 location = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * (location - mission.true_SC{i_SC}.true_SC_body.location_COM)' )' + mission.true_SC{i_SC}.true_SC_body.location_COM;
                 orientation = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * orientation')';
             end
-            
+
             % Create distinct shape for micro thrusters
             [X,Y,Z] = cylinder([0.01, 0.015], 8);
             len = 0.04;
@@ -531,14 +531,14 @@ for i_SC = 1:1:mission.num_SC
                 v(1), v(2), v(3), ...
                 'LineWidth', 1.5, 'Color', rgb('DarkViolet'), 'AutoScaleFactor', 0.2);
             set(get(get(q,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
-            
+
             % Add a plume effect if thruster is firing (check if property exists and status is firing)
             if isprop(MT, 'flag_executive') && MT.flag_executive
                 % Create a smaller plume effect for micro thrusters
-                plume_len = 0.1; 
+                plume_len = 0.1;
                 [X_plume,Y_plume,Z_plume] = cylinder([0.005, 0.02], 8);
                 Z_plume = Z_plume * plume_len - 0.005;  % Offset slightly to start at the nozzle
-                
+
                 % Transform plume to thruster orientation
                 for i = 1:size(X_plume,1)
                     for j = 1:size(X_plume,2)
@@ -548,7 +548,7 @@ for i_SC = 1:1:mission.num_SC
                         Z_plume(i,j) = p(3) + location(3);
                     end
                 end
-                
+
                 h_plume = surf(X_plume, Y_plume, Z_plume, 'FaceColor', rgb('Violet'), 'EdgeColor', 'none', 'FaceAlpha', 0.3);
                 set(get(get(h_plume,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
             end
@@ -558,35 +558,35 @@ for i_SC = 1:1:mission.num_SC
     % Chemical Thruster visualization with attitude transformation
     ct_handles = [];
     if isfield(mission.true_SC{i_SC}.true_SC_body.num_hardware_exists, 'num_chemical_thruster') && ...
-       mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster > 0
+            mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster > 0
         for i_ct = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster
             CT = mission.true_SC{i_SC}.true_SC_chemical_thruster{i_ct};
-            
+
             % Apply attitude transformation to thruster location and orientation
             location = CT.location;
             orientation = CT.orientation / norm(CT.orientation);
-            
+
             % Apply attitude rotation if available
             if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isprop(mission.true_SC{i_SC}.true_SC_adc, 'rotation_matrix')
                 location = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * (location - mission.true_SC{i_SC}.true_SC_body.location_COM)' )' + mission.true_SC{i_SC}.true_SC_body.location_COM;
                 orientation = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * orientation')';
             end
-            
+
             % Make chemical thrusters significantly larger and more distinct than micro thrusters
             % Base shape - nozzle (inverted cone)
             [X,Y,Z] = cylinder([0.05, 0.025], 16);
             nozzle_len = 0.1;
             Z = Z * nozzle_len;
-            
+
             % Add thrust chamber (cylinder)
             [X2,Y2,Z2] = cylinder(0.05, 16);
             chamber_len = 0.08;
             Z2 = Z2 * chamber_len + nozzle_len;
-            
+
             X = [X; X2];
             Y = [Y; Y2];
             Z = [Z; Z2];
-            
+
             v = orientation;
             if abs(v(3) - 1) < 1e-10
                 R = eye(3);
@@ -621,14 +621,14 @@ for i_SC = 1:1:mission.num_SC
                 v(1), v(2), v(3), ...
                 'LineWidth', 3, 'Color', rgb('Black'), 'AutoScaleFactor', 0.5);
             set(get(get(q,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
-            
+
             % Add a plume effect if thruster is firing
             if isprop(CT, 'thruster_state') && strcmp(CT.thruster_state, 'firing')
                 % Create a larger, more distinctive plume effect
                 plume_len = 0.4; % Longer plume for chemical thrusters
                 [X_plume,Y_plume,Z_plume] = cylinder([0.02, 0.1], 16);
                 Z_plume = Z_plume * plume_len - 0.02;  % Offset slightly to start at the nozzle
-                
+
                 % Transform plume to thruster orientation
                 for i = 1:size(X_plume,1)
                     for j = 1:size(X_plume,2)
@@ -638,7 +638,7 @@ for i_SC = 1:1:mission.num_SC
                         Z_plume(i,j) = p(3) + location(3);
                     end
                 end
-                
+
                 h_plume = surf(X_plume, Y_plume, Z_plume, 'FaceColor', rgb('Yellow'), 'EdgeColor', 'none', 'FaceAlpha', 0.6);
                 set(get(get(h_plume,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
             end
@@ -698,7 +698,7 @@ for i_SC = 1:1:mission.num_SC
         plot3(NaN, NaN, NaN, 'Color', rgb('MediumPurple'), 'LineWidth', 2, ...
             'DisplayName', ['Micro Thrusters (x', num2str(length(mt_handles)), ')']);
     end
-    
+
     % Chemical Thrusters
     if ~isempty(ct_handles)
         plot3(NaN, NaN, NaN, 'Color', rgb('Black'), 'LineWidth', 2, ...
@@ -711,7 +711,7 @@ for i_SC = 1:1:mission.num_SC
     % quiver3(0, 0, 0, fixed_axis_length, 0, 0, 'LineWidth', 1, 'Color', [0.7 0 0], 'LineStyle', ':', 'AutoScaleFactor', 1, 'MaxHeadSize', 0.3);
     % quiver3(0, 0, 0, 0, fixed_axis_length, 0, 'LineWidth', 1, 'Color', [0 0.7 0], 'LineStyle', ':', 'AutoScaleFactor', 1, 'MaxHeadSize', 0.3);
     % quiver3(0, 0, 0, 0, 0, fixed_axis_length, 'LineWidth', 1, 'Color', [0 0 0.7], 'LineStyle', ':', 'AutoScaleFactor', 1, 'MaxHeadSize', 0.3);
-    
+
     % Plot settings
     axis equal
     grid on
@@ -723,29 +723,47 @@ for i_SC = 1:1:mission.num_SC
     ylabel('Y [m]')
     zlabel('Z [m]')
     set(gca, 'FontSize', obj.plot_parameters.standard_font_size, 'FontName', obj.plot_parameters.standard_font_type)
-    
+
     % Set a fixed view angle that makes rotations more visible
     if is_realtime_update
         view([-37.5, 30]); % Use a fixed view angle for better viewing of rotations
     else
         view(3) % Default 3D view
     end
-    
+
     % Add simulation time and attitude information to title if in real-time mode
     if is_realtime_update
         elapsed_time = seconds(mission.true_time.time - mission.true_time.t_initial);
         elapsed_time.Format = 'dd:hh:mm:ss';
-        
+
         % Simplified title with just time and SC number
-        title_str = sprintf('SC%d | Last Update: %s', i_SC, char(elapsed_time));
+        title_str = sprintf('SC %d | Simulation Time: %s', i_SC, char(elapsed_time));
     else
         title_str = mission.true_SC{i_SC}.true_SC_body.name;
     end
-    
+
     title(title_str, 'FontSize', obj.plot_parameters.title_font_size)
     hold off
+    
+end
 
-    drawnow limitrate
+drawnow limitrate
+
+if (mission.storage.plot_parameters.flag_save_video == 1) && (mission.flag_stop_sim == 0) && is_realtime_update
+    open(obj.plot_parameters.myVideo);
+    %     writeVideo(obj.plot_parameters.myVideo, getframe(plot_handle));
+
+    % Suppose you generate a frame:
+    frame = getframe(plot_handle);  % or however you capture your frame
+
+    % Resize the frame to match required size
+    targetSize = [1412, 3840];  % [height, width]
+    frameResized = imresize(frame.cdata, targetSize);
+
+    % Convert back to movie frame
+    frameToWrite = im2frame(frameResized);
+
+    writeVideo(obj.plot_parameters.myVideo, frameToWrite);
 end
 
 if obj.plot_parameters.flag_save_plots == 1 && ~is_realtime_update
@@ -755,26 +773,26 @@ end
 
 % Helper function to convert rotation matrix to Euler angles
 function [yaw, pitch, roll] = mat2angle(R)
-    % Extract Euler angles from rotation matrix
-    % R is the rotation matrix
-    % Returns yaw, pitch, roll in radians
-    
-    % Check if we're in the gimbal lock case
-    if abs(R(3,1)) > 0.99999
-        % Gimbal lock case
-        yaw = 0; % Set yaw to zero in gimbal lock
-        
-        if R(3,1) < 0
-            pitch = pi/2;
-            roll = atan2(R(1,2), R(1,3));
-        else
-            pitch = -pi/2;
-            roll = atan2(-R(1,2), -R(1,3));
-        end
+% Extract Euler angles from rotation matrix
+% R is the rotation matrix
+% Returns yaw, pitch, roll in radians
+
+% Check if we're in the gimbal lock case
+if abs(R(3,1)) > 0.99999
+    % Gimbal lock case
+    yaw = 0; % Set yaw to zero in gimbal lock
+
+    if R(3,1) < 0
+        pitch = pi/2;
+        roll = atan2(R(1,2), R(1,3));
     else
-        % Normal case
-        pitch = asin(-R(3,1));
-        roll = atan2(R(3,2)/cos(pitch), R(3,3)/cos(pitch));
-        yaw = atan2(R(2,1)/cos(pitch), R(1,1)/cos(pitch));
+        pitch = -pi/2;
+        roll = atan2(-R(1,2), -R(1,3));
     end
+else
+    % Normal case
+    pitch = asin(-R(3,1));
+    roll = atan2(R(3,2)/cos(pitch), R(3,3)/cos(pitch));
+    yaw = atan2(R(2,1)/cos(pitch), R(1,1)/cos(pitch));
+end
 end

@@ -61,8 +61,6 @@ classdef True_SC_Radio_Antenna < handle
 
         data % Other useful data
 
-        maximum_data_rate
-
         %% [ ] Properties: Storage Variables
 
         store
@@ -85,11 +83,9 @@ classdef True_SC_Radio_Antenna < handle
             obj.health = 1;
             obj.temperature = 10; % [deg C]
             obj.flag_executive = 0;
-            % 
+
             obj.antenna_type = init_data.antenna_type;
-            % 
-            % obj.mode_true_SC_radio_antenna_selector = init_data.mode_true_SC_radio_antenna_selector;
-            % 
+            
             obj.TX_power_consumed = init_data.TX_power_consumed; % [Watts]
             obj.RX_power_consumed = init_data.RX_power_consumed; % [Watts]
             obj.instantaneous_power_consumed = obj.TX_power_consumed; % [Watts] Will be modified dynamically but a value is needed to register
@@ -97,15 +93,7 @@ classdef True_SC_Radio_Antenna < handle
             obj.location = init_data.location; % [m]
             obj.orientation = init_data.orientation; % [unit vector]
 
-            % switch obj.mode_true_SC_radio_antenna_selector
-            %     case 'TX'
-            %         obj.instantaneous_power_consumed = obj.TX_power_consumed; % [Watts]
-            %     case 'RX'
-            %         obj.instantaneous_power_consumed = obj.RX_power_consumed; % [Watts]
-            %     otherwise
-            %         error('Should not reach here!')
-            % end
-
+           
             if isfield(init_data, 'antenna_gain')
 
                 obj.antenna_gain = init_data.antenna_gain; % [dB]
@@ -119,14 +107,13 @@ classdef True_SC_Radio_Antenna < handle
             obj.base_data_rate_generated = init_data.base_data_rate_generated; % [kbps]
             obj.instantaneous_data_rate_generated = obj.base_data_rate_generated; % [kbps]
             obj.instantaneous_data_rate_removed = 0; % [kbps]
-            obj.maximum_data_rate = obj.maximum_data_rate; % [kbps]
 
-            % if isfield(init_data, 'data')
-            %     obj.data = init_data.data;
-            % else
-            %     obj.data = [];
-            % end
-            % 
+            if isfield(init_data, 'data')
+                obj.data = init_data.data;
+            else
+                obj.data = [];
+            end
+
             % Initialize Variables to store
             obj.store = [];
 
@@ -186,8 +173,23 @@ classdef True_SC_Radio_Antenna < handle
                 switch obj.mode_true_SC_radio_antenna_selector
                     case 'TX'
                         obj.instantaneous_power_consumed = obj.TX_power_consumed; % [Watts]
+
+                        if isfield(obj.data, 'instantaneous_TX_power_consumed_per_SC_mode')
+                            obj.instantaneous_power_consumed = obj.data.instantaneous_TX_power_consumed_per_SC_mode(mission.true_SC{i_SC}.software_SC_executive.this_sc_mode_value); % [W]
+                            
+                            % Dont do the Slew update
+                        end
+
+
                     case 'RX'
                         obj.instantaneous_power_consumed = obj.RX_power_consumed; % [Watts]
+
+                        if isfield(obj.data, 'instantaneous_RX_power_consumed_per_SC_mode')
+                            obj.instantaneous_power_consumed = obj.data.instantaneous_RX_power_consumed_per_SC_mode(mission.true_SC{i_SC}.software_SC_executive.this_sc_mode_value); % [W]
+
+                            % Dont do the Slew update
+                        end
+
                     otherwise
                         error('[True_SC_Radio_Antenna] Should not reach here!')
                 end

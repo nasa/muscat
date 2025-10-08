@@ -1,4 +1,4 @@
-function func_plot_orbital_control_performance(mission, i_SC)
+function func_plot_IBEAM_orbit_deflection_control_performance(mission, i_SC)
     % Make sure kd is valid and within range
     kd = min(mission.storage.k_storage, size(mission.true_time.store.time, 1));
     
@@ -9,8 +9,8 @@ function func_plot_orbital_control_performance(mission, i_SC)
     end
     
     % Check hardware/software existence
-    has_chemical_thrusters = mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster > 0;
-    has_ep_thrusters = mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_ep_thruster > 0;
+    has_ep_thrusters = mission.true_SC{1}.true_SC_body.num_hardware_exists.num_ep_thruster > 0;
+
     has_micro_thrusters = mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_micro_thruster > 0;
     has_orbit_control = isfield(mission.true_SC{i_SC}, 'software_SC_control_orbit');
     has_fuel_tanks = mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_fuel_tank > 0;
@@ -27,177 +27,8 @@ function func_plot_orbital_control_performance(mission, i_SC)
     set(plot_handle, 'PaperPositionMode', 'auto');
     colors = {'r', 'g', 'b', 'c', 'm', 'y', 'k', [0.5, 0.5, 0.5]};
     
-    %% Row 1: Chemical Thruster Info
-    if has_chemical_thrusters
-        num_thrusters = mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster;
-        
-        % Only use the first thruster for plots (typically only one chemical thruster)
-        i_CT = 1;
-        thruster = mission.true_SC{i_SC}.true_SC_chemical_thruster{i_CT};
-        
-        % Plot 1: Thrust plot
-        subplot(nb_row, nb_col, 1);
-        hold on;
-        plot(mission.true_time.store.time(1:kd), thruster.store.commanded_thrust(1:kd), '-r', 'LineWidth', 1.5, 'DisplayName', 'Commanded');
-        plot(mission.true_time.store.time(1:kd), thruster.store.true_commanded_thrust(1:kd), '--b', 'LineWidth', 1.5, 'DisplayName', 'True');
-        plot(mission.true_time.store.time(1:kd), ones(kd,1)*thruster.maximum_thrust, ':k', 'HandleVisibility', 'off');
-        grid on; xlabel('Time [sec]'); ylabel('Thrust [N]');
-        title([thruster.name ' Thrust']); legend('Location', 'southeast');
-        set(gca, 'FontSize', mission.storage.plot_parameters.standard_font_size, 'FontName', mission.storage.plot_parameters.standard_font_type);
-        hold off;
-
-        % Plot 2: Force vector components plot
-        subplot(nb_row, nb_col, 2);
-        hold on;
-        
-        % Get force data
-        if isfield(thruster.store, 'force_inertial')
-            try
-                force_data = thruster.store.force_inertial(1:kd, :);
-                
-                % Add debug information about the data
-                if any(any(isnan(force_data))) || any(any(isinf(force_data)))
-                    warning('Force data contains NaN or Inf values');
-                end
-                
-                % Display summary of force data
-                max_force = max(max(abs(force_data)));
-                disp(['Max force magnitude: ' num2str(max_force) ' N']);
-                
-                % Check if force data has any significant values
-                if max_force < 1e-6
-                    text(mean(mission.true_time.store.time(1:kd)), 0, 'Force values near zero', 'FontSize', 12, 'HorizontalAlignment', 'center');
-                else
-                    % Ensure we're plotting data even if values are small
-                    for i = 1:3
-                        plot(mission.true_time.store.time(1:kd), force_data(:, i), '-', 'LineWidth', 1.5, 'Color', colors{i}, 'DisplayName', ['F' char('X'+i-1)]);
-                        
-                        % Add annotation for peak values for better visibility
-                        [max_val, max_idx] = max(abs(force_data(:, i)));
-                        if max_val > 0.001 % Only annotate if there's a significant value
-                            text(mission.true_time.store.time(max_idx), force_data(max_idx, i), ...
-                                 [' ' num2str(force_data(max_idx, i), '%.3f') ' N'], ...
-                                 'FontSize', 8, 'Color', colors{i});
-                        end
-                    end
-                end
-            catch e
-                % Handle any errors in force data processing
-                warning(['Error processing force data: ' e.message]);
-                text(0.5, 0.5, 'Error processing force data', 'FontSize', 12, 'HorizontalAlignment', 'center');
-            end
-        else
-            % Handle case where force_inertial doesn't exist
-            text(0.5, 0.5, 'No force data available', 'FontSize', 12, 'HorizontalAlignment', 'center');
-        end
-        
-        grid on; xlabel('Time [sec]'); ylabel('Force [N]');
-        title([thruster.name ' Inertial Force']); legend('Location', 'southeast');
-        ylim([-1, 1]); % Set a reasonable y-limit for better visibility
-        set(gca, 'FontSize', mission.storage.plot_parameters.standard_font_size, 'FontName', mission.storage.plot_parameters.standard_font_type);
-        hold off;
-        
-        % Plot 3: Thruster State Machine
-        subplot(nb_row, nb_col, 3);
-        hold on;
-        
-        % Only proceed if thruster state is available
-        if isfield(thruster.store, 'thruster_state')
-            % Define state bands with colors
-            states = {'idle', 'warming up', 'ready', 'firing'};
-            state_colors = {[0.8, 0.8, 0.8], [1, 0.8, 0.8], [0.8, 1, 0.8], [0.8, 0.8, 1]};
-            
-            % Draw colored bands for each state
-            for j = 1:length(states)
-                y_pos = j;
-                fill([mission.true_time.store.time(1) mission.true_time.store.time(kd) mission.true_time.store.time(kd) mission.true_time.store.time(1)], ...
-                     [y_pos-0.25 y_pos-0.25 y_pos+0.25 y_pos+0.25], ...
-                     state_colors{j}, 'EdgeColor', 'none', 'FaceAlpha', 0.5, ...
-                     'DisplayName', states{j});
-            end
-            
-            % Convert thruster states to numerical values but in a memory-efficient way
-            % For large kd, process in chunks to avoid excessive memory usage
-            chunk_size = 1000;
-            num_chunks = ceil(kd / chunk_size);
-            
-            % Instead of creating a full array, plot in chunks
-            last_state = 1; % Default to idle
-            state_changes = [];
-            change_times = [];
-            
-            for chunk = 1:num_chunks
-                start_idx = (chunk-1) * chunk_size + 1;
-                end_idx = min(chunk * chunk_size, kd);
-                
-                for i = start_idx:end_idx
-                    current_state = 1; % Default to idle
-                    
-                    if i <= length(thruster.store.thruster_state) && ...
-                       ~isempty(thruster.store.thruster_state{i}) && ...
-                       ischar(thruster.store.thruster_state{i})
-                        switch thruster.store.thruster_state{i}
-                            case 'idle'
-                                current_state = 1;
-                            case 'warming_up'
-                                current_state = 2;
-                            case 'ready'
-                                current_state = 3;
-                            case 'firing'
-                                current_state = 4;
-                        end
-                    end
-                    
-                    % Record state changes only
-                    if current_state ~= last_state
-                        state_changes = [state_changes; last_state; current_state];
-                        change_times = [change_times; mission.true_time.store.time(max(i-1,1)); mission.true_time.store.time(i)];
-                        last_state = current_state;
-                    end
-                end
-            end
-            
-            % Add the final state to close the plot
-            if ~isempty(state_changes)
-                state_changes = [state_changes; last_state];
-                change_times = [change_times; mission.true_time.store.time(kd)];
-                
-                % Plot the state changes as line segments
-                plot(change_times, state_changes, '-k', 'LineWidth', 2, 'DisplayName', 'Thruster State');
-                
-                % Mark state transitions with circles
-                for i = 2:2:length(change_times)-1
-                    plot(change_times(i), state_changes(i), 'ok', 'MarkerFaceColor', 'k', 'MarkerSize', 6);
-                end
-            else
-                % No state changes, just plot a flat line at the default state
-                plot([mission.true_time.store.time(1) mission.true_time.store.time(kd)], [1 1], '-k', 'LineWidth', 2, 'DisplayName', 'Thruster State');
-            end
-            
-            % Add labels for state values
-            yticks(1:4);
-            yticklabels(states);
-            ylim([0.5, 4.5]);
-            
-            % Add commanded thrust information but don't use yyright axis
-            % Instead, scale and offset the thrust data to overlay it
-            max_thrust = max(thruster.store.commanded_thrust(1:kd));
-            if max_thrust > 0
-                scaled_thrust = 0.5 + 3.5 * (thruster.store.commanded_thrust(1:kd) / max_thrust);
-                plot(mission.true_time.store.time(1:kd), scaled_thrust, '--r', 'LineWidth', 1, 'DisplayName', 'Scaled Thrust');
-            end
-        else
-            text(0.5, 0.5, 'No thruster state data available', 'HorizontalAlignment', 'center', 'FontSize', 12);
-        end
-        
-        % Set titles and labels
-        grid on;
-        title('Thruster State');
-        xlabel('Time [sec]');
-        ylabel('State');
-        set(gca, 'FontSize', mission.storage.plot_parameters.standard_font_size, 'FontName', mission.storage.plot_parameters.standard_font_type);
-        hold off;
-    elseif has_ep_thrusters       
+    %% Row 1: Thruster Info
+    if has_ep_thrusters
         num_thrusters = mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_ep_thruster;
           
         % Plot 1: Thrust plot
@@ -206,15 +37,42 @@ function func_plot_orbital_control_performance(mission, i_SC)
 
         for i_HW = 1:num_thrusters
             thruster = mission.true_SC{i_SC}.true_SC_ep_thruster{i_HW};
-        
-            plot(mission.true_time.store.time(1:kd), thruster.store.commanded_thrust(1:kd), strcat('-', colors{i_HW}), 'LineWidth', 1.5, 'DisplayName', strcat('Commanded #', num2str(i_HW)));
-            plot(mission.true_time.store.time(1:kd), thruster.store.true_commanded_thrust(1:kd), strcat('--', colors{i_HW}), 'LineWidth', 1.5, 'DisplayName', strcat('True #', num2str(i_HW)));
+            
+            switch i_HW
+                case 1
+                    command_color = '-r';
+                    true_color = '--r';
+                    command_label = 'Commanded #1';
+                    true_label = 'True #1';
+                
+                case 2
+                    command_color = '-g';
+                    true_color = '--g';
+                    command_label = 'Commanded #2';
+                    true_label = 'True #2';
+            
+                case 3
+                    command_color = '-b';
+                    true_color = '--b';
+                    command_label = 'Commanded #3';
+                    true_label = 'True #3';
+
+                case 4
+                    command_color = '-k';
+                    true_color = '--k';
+                    command_label = 'Commanded #4';
+                    true_label = 'True #4';
+
+            end
+
+            plot(mission.true_time.store.time(1:kd), thruster.store.commanded_thrust(1:kd), command_color, 'LineWidth', 1.5, 'DisplayName', command_label);
+            plot(mission.true_time.store.time(1:kd), thruster.store.true_commanded_thrust(1:kd), true_color, 'LineWidth', 1.5, 'DisplayName', true_label);
 
         end
         
         plot(mission.true_time.store.time(1:kd), ones(kd,1)*thruster.maximum_thrust, ':k', 'HandleVisibility', 'off');
         grid on; xlabel('Time [sec]'); ylabel('Thrust [N]');
-        title(['EP Thrust']); legend('Location', 'southeast');
+        title([thruster.name ' Thrust']); legend('Location', 'southeast');
         set(gca, 'FontSize', mission.storage.plot_parameters.standard_font_size, 'FontName', mission.storage.plot_parameters.standard_font_type);
         hold off;
 
@@ -375,17 +233,17 @@ function func_plot_orbital_control_performance(mission, i_SC)
         set(gca, 'FontSize', mission.storage.plot_parameters.standard_font_size, 'FontName', mission.storage.plot_parameters.standard_font_type);
         hold off;
     else
-        % If no thrusters, display message in first row plots
+        % If no ep thrusters, display message in first row plots
         for i = 1:3
             subplot(nb_row, nb_col, i);
-            text(0.5, 0.5, 'No thrusters present', 'HorizontalAlignment', 'center', 'FontSize', 12);
+            text(0.5, 0.5, 'No EP thrusters present', 'HorizontalAlignment', 'center', 'FontSize', 12);
             axis off;
             title(['Plot ' num2str(i)]);
         end
-
+        
     end
     
-    %% Row 2: Orbit Control and DeltaV
+    %% Row 2: Station-keeping and Deflection
     if has_orbit_control
         orbit_control = mission.true_SC{i_SC}.software_SC_control_orbit;
         time_vec = mission.true_time.store.time(1:kd);
@@ -522,42 +380,42 @@ function func_plot_orbital_control_performance(mission, i_SC)
         set(gca, 'FontSize', mission.storage.plot_parameters.standard_font_size, 'FontName', mission.storage.plot_parameters.standard_font_type);
         hold off;
         
-        % Plot 8: Chemical Thruster Consumption
+        % Plot 8: EP Thruster Consumption
         subplot(nb_row, nb_col, 8);
         hold on;
         
-        % Calculate consumption by chemical thrusters
-        chemical_consumption = zeros(kd, 1);
-        if has_chemical_thrusters
-            for i_CT = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster
-                thruster = mission.true_SC{i_SC}.true_SC_chemical_thruster{i_CT};
+        % Calculate consumption by EP thrusters
+        ep_consumption = zeros(kd, 1);
+        if has_ep_thrusters
+            for i_CT = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_ep_thruster
+                thruster = mission.true_SC{i_SC}.true_SC_ep_thruster{i_CT};
                 if isfield(thruster.store, 'total_fuel_consumed')
-                    chemical_consumption = chemical_consumption + thruster.store.total_fuel_consumed(1:kd);
+                    ep_consumption = ep_consumption + thruster.store.total_fuel_consumed(1:kd);
                 end
             end
             
-            if any(chemical_consumption > 0)
-                plot(time_vec, chemical_consumption, '-r', 'LineWidth', 2, 'DisplayName', 'Chemical');
+            if any(ep_consumption > 0)
+                plot(time_vec, ep_consumption, '-r', 'LineWidth', 2, 'DisplayName', 'EP');
                 
                 % Add percentage axis on the right
                 if total_initial_capacity > 0
                     yyaxis right;
-                    consumption_percentage = (chemical_consumption / total_initial_capacity) * 100;
+                    consumption_percentage = (ep_consumption / total_initial_capacity) * 100;
                     plot(time_vec, consumption_percentage, '--', 'Color', [0.5, 0.5, 0.5], 'LineWidth', 1, 'DisplayName', '% Used');
                     ylabel('% of Total Capacity');
                     yyaxis left;
                 end
             else
-                text(0.5, 0.5, 'No chemical thruster consumption yet', 'HorizontalAlignment', 'center', 'FontSize', 12);
+                text(0.5, 0.5, 'No EP thruster consumption yet', 'HorizontalAlignment', 'center', 'FontSize', 12);
             end
         else
-            text(0.5, 0.5, 'No chemical thrusters present', 'HorizontalAlignment', 'center', 'FontSize', 12);
+            text(0.5, 0.5, 'No EP thrusters present', 'HorizontalAlignment', 'center', 'FontSize', 12);
         end
         
         % Add legend and labels
         legend('Location', 'northwest');
         grid on; xlabel('Time [sec]'); ylabel('Fuel Consumed [kg]');
-        title('Chemical Thruster Propellant Consumption');
+        title('EP Thruster Propellant Consumption');
         set(gca, 'FontSize', mission.storage.plot_parameters.standard_font_size, 'FontName', mission.storage.plot_parameters.standard_font_type);
         hold off;
         

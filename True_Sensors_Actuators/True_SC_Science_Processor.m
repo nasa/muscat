@@ -14,8 +14,6 @@ classdef True_SC_Science_Processor < handle
 
         instantaneous_data_removed_per_sample % [kb] : Data in kilo bits (kb)
 
-        flag_show_science_processor_plot % [Boolean] : 1 = Shows the Science Processor plot
-
         mode_true_SC_science_processor_selector % [string] Select which Mode to run
 
         %% [ ] Properties: Variables Computed Internally
@@ -57,7 +55,6 @@ classdef True_SC_Science_Processor < handle
             obj.instantaneous_power_consumed = init_data.instantaneous_power_consumed; % [W]
             obj.instantaneous_data_rate_generated = init_data.instantaneous_data_rate_generated; % [kbps]
             obj.instantaneous_data_removed_per_sample = init_data.instantaneous_data_removed_per_sample; % [kb]
-            obj.flag_show_science_processor_plot = init_data.flag_show_science_processor_plot; % [Boolean]
             obj.mode_true_SC_science_processor_selector = init_data.mode_true_SC_science_processor_selector; % [string]
 
             obj.flag_executive = 0;
@@ -133,22 +130,11 @@ classdef True_SC_Science_Processor < handle
 
                     otherwise
                         error('Should not reach here!')
-                end                
-
-                % Update Power Consumed
-                func_update_instantaneous_power_consumed(mission.true_SC{i_SC}.true_SC_power, obj, mission);
+                end                                
                 
-                % Update Data Handling
-                func_update_instantaneous_data_generated(mission.true_SC{i_SC}.true_SC_data_handling, obj, mission);
-                func_update_instantaneous_data_removed(mission.true_SC{i_SC}.true_SC_data_handling, obj, mission);
-                
-            else
-                % If not active, set power to a low standby value
-                obj.instantaneous_power_consumed = obj.instantaneous_power_consumed * 0.1; % 10% of normal power when in standby
-                
-                % Still update power system even when in standby
-                func_update_instantaneous_power_consumed(mission.true_SC{i_SC}.true_SC_power, obj, mission);
             end
+
+            % Updates of Power and Data should happen within the function
 
             % Update Storage
             obj = func_update_true_SC_science_processor_store(obj, mission);

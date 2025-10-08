@@ -38,10 +38,10 @@ classdef Software_SC_Estimate_Orbit < handle
         name_relative_target % [string] : Name of the target, relative to which position and velocity are specified
         index_relative_target % [integer] : Index of the target, relative to which position and velocity are specified
 
-        position_target % [km] Current position of Target wrt Sun-centered J2000
+        position_target % [km] Current position of Target wrt Solar System Barycenter centered J2000
         position_target_uncertainty % [km]
 
-        velocity_target % [km/sec] Current velocity of Target wrt Sun-centered J2000
+        velocity_target % [km/sec] Current velocity of Target wrt Solar System Barycenter centered J2000
         velocity_target_uncertainty % [km/sec]
 
         compute_time % [sec] SC time when this measurement was taken

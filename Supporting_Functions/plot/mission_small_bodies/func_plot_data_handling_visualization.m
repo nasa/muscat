@@ -147,28 +147,28 @@ if isfield(mission.true_SC{i_SC}, 'true_SC_onboard_memory')
                 'LineWidth', 1, 'Color', mission.storage.plot_parameters.color_array(i_HW), ...
                 'DisplayName', [memory.name ' Max'])
 
-            % Update totals for annotation
-            total_max_capacity = total_max_capacity + memory.store.maximum_capacity;
-            if valid_points > 0
-                total_current_usage = total_current_usage + memory.store.instantaneous_capacity(valid_points);
-            end
+            %             % Update totals for annotation
+            %             total_max_capacity = total_max_capacity + memory.store.maximum_capacity;
+            %             if valid_points > 0
+            %                 total_current_usage = total_current_usage + memory.store.instantaneous_capacity(valid_points);
+            %             end
 
-            % Identify memory resets (transmission events)
-            mem_data = memory.store.instantaneous_capacity(1:valid_points);
-            reset_indices = find(diff(mem_data) < -0.5*max(mem_data)); % Look for 50% drops
-
-            % Mark memory reset points
-            if ~isempty(reset_indices)
-                for i = 1:length(reset_indices)
-                    idx = reset_indices(i) + 1; % Point after the drop
-                    if idx <= valid_points
-                        plot(valid_time(idx), mem_data(idx), 'v', 'MarkerSize', 8, ...
-                            'MarkerFaceColor', 'g', 'MarkerEdgeColor', 'k', ...
-                            'DisplayName', 'Memory Reset');
-                    end
-                end
-            end
-        end
+            %             % Identify memory resets (transmission events)
+            %             mem_data = memory.store.instantaneous_capacity(1:valid_points);
+            %             reset_indices = find(diff(mem_data) < -0.5*max(mem_data)); % Look for 50% drops
+            %
+            %             % Mark memory reset points
+            %             if ~isempty(reset_indices)
+            %                 for i = 1:length(reset_indices)
+            %                     idx = reset_indices(i) + 1; % Point after the drop
+            %                     if idx <= valid_points
+            %                         plot(valid_time(idx), mem_data(idx), 'v', 'MarkerSize', 8, ...
+            %                             'MarkerFaceColor', 'g', 'MarkerEdgeColor', 'k', ...
+            %                             'DisplayName', 'Memory Reset');
+            %                     end
+            %                 end
+            %             end
+        end        
 
         % Can be used for more informations :
 
@@ -192,6 +192,7 @@ if isfield(mission.true_SC{i_SC}, 'true_SC_onboard_memory')
 
     grid on
     ylim([1 inf])
+    set(gca, 'YScale', 'log')
     legend('Location','southeast')
     xlabel('Time [sec]')
     ylabel('Data [kb]')

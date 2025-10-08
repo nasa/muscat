@@ -82,7 +82,7 @@ classdef True_SC_Generic_Sensor < handle
         function obj = func_update_true_SC_generic_sensor_store(obj, mission)
 
             if mission.storage.flag_store_this_time_step == 1
-                obj.store.flag_executive(mission.storage.k_storage_attitude,:) = obj.flag_executive; % [Boolean]
+                obj.store.flag_executive(mission.storage.k_storage,:) = obj.flag_executive; % [Boolean]
 
                 if obj.flag_executive == 1
                     obj.store.instantaneous_data_rate_generated(mission.storage.k_storage,:) = obj.instantaneous_data_rate_generated; % [kbps]
@@ -102,6 +102,11 @@ classdef True_SC_Generic_Sensor < handle
 
                 if isfield(obj.data, 'instantaneous_power_consumed_per_SC_mode')
                     obj.instantaneous_power_consumed = obj.data.instantaneous_power_consumed_per_SC_mode(mission.true_SC{i_SC}.software_SC_executive.this_sc_mode_value); % [W]
+
+                    % Update power value for Slew only
+                    if (mission.true_SC{i_SC}.software_SC_executive.flag_slew_sc_mode_exists == 1) && (mission.true_SC{i_SC}.software_SC_control_attitude.flag_slew == 1)
+                        obj.instantaneous_power_consumed = obj.data.instantaneous_power_consumed_per_SC_mode( func_find_this_sc_mode_value(mission.true_SC{i_SC}.software_SC_executive, 'Slew') ); % [W]
+                    end
                 end
          
                 % Update Power Consumed

@@ -31,6 +31,7 @@ if isfield(mission.true_SC{i_SC}, 'software_SC_estimate_attitude')
     plot(mission.true_time.store.time_attitude(1:kd), mission.true_SC{i_SC}.software_SC_estimate_attitude.store.attitude(1:kd,4),'--','LineWidth',2,'Color',mission.storage.plot_parameters.color_array(4), 'DisplayName','\beta_4 (Estimated)')
 end
 
+ylim([-1 1])
 
 grid on
 legend('Location','southwest')
@@ -100,6 +101,8 @@ if isfield(mission.true_SC{i_SC}, 'software_SC_control_attitude')
     plot(mission.true_time.store.time_attitude(1:kd), mission.true_SC{i_SC}.software_SC_control_attitude.store.desired_attitude(1:kd,3), '-','LineWidth',2,'Color',mission.storage.plot_parameters.color_array(3), 'DisplayName','\beta_3 (Desired)')
     plot(mission.true_time.store.time_attitude(1:kd), mission.true_SC{i_SC}.software_SC_control_attitude.store.desired_attitude(1:kd,4), '-','LineWidth',2,'Color',mission.storage.plot_parameters.color_array(4), 'DisplayName','\beta_4 (Desired)')
 
+    ylim([-1 1])
+    
     grid on
     legend('Location','southwest')
     xlabel('Time [sec]')

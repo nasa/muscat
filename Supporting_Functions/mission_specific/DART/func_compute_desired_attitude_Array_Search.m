@@ -9,8 +9,23 @@ primary_vector = obj.data.primary_vector;
 desired_primary_vector = obj.data.desired_primary_vector;
 
 % Compute rotation to rotate pointing aligned with target (in J2000)
-v = cross(primary_vector, desired_primary_vector);
-Rot_primary = eye(3) + skew(v)+skew(v)^2*(1/(1+dot(primary_vector, desired_primary_vector)));
+if 1 - dot(primary_vector, desired_primary_vector) <= 1e-3
+    Rot_primary = eye(3);
+
+elseif 1 + dot(primary_vector, desired_primary_vector) <= 1e-3
+
+    third_vector = func_normalize_vec([primary_vector(2:3), primary_vector(1)]);
+    v = func_normalize_vec(cross(primary_vector, third_vector));
+
+    Rot_primary = -eye(3) + 2*(v')*v;
+
+else
+    v = cross(primary_vector, desired_primary_vector);
+    Rot_primary = eye(3) + skew(v) + skew(v)^2*(1/(1+dot(primary_vector, desired_primary_vector)));
+
+    % This is Rodrigue's formula; it gives a proper rotation matrix
+    % Rot_primary = eye(3) + skew(v) + skew(v)^2*(1-dot(primary_vector, desired_primary_vector))/(norm(v)^2);
+end
 
 % 2) Optimizing the Secondary Vector
 theta = 0:2*pi/360:2*pi;
@@ -21,7 +36,7 @@ secondary_vector = obj.data.secondary_vector;
 
 for i=1:length(theta)
     U = desired_primary_vector;
-    R = func_axis_angle_rot(U, theta(i));
+    R = func_axis_angle_rot(U, theta(i)) * Rot_primary;
     optimized_error_SP_pointing(i) = func_angle_between_vectors(desired_secondary_vector, R*secondary_vector');
 end
 

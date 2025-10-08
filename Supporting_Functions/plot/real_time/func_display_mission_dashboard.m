@@ -118,9 +118,9 @@ function build_left_dashboard_content(parent, mission, is_realtime_update)
     info_color = [0.6, 0.8, 1.0];   % Light blue for information text
     
     % Define font and spacing
-    title_font = 12;
-    text_font = 10;
-    info_font = 9;
+    title_font = mission.storage.plot_parameters.title_font_size;
+    text_font = mission.storage.plot_parameters.standard_font_size;
+    info_font = mission.storage.plot_parameters.standard_font_size;
     
     % Current vertical position (start from top)
     y_pos = 0.98;
@@ -302,8 +302,8 @@ function build_right_dashboard_content(parent, mission, is_realtime_update)
     highlight_color = [0.2, 0.8, 0.2]; % Green for highlighted items
     
     % Define font and spacing
-    title_font = 12;
-    text_font = 10;
+    title_font = mission.storage.plot_parameters.title_font_size;
+    text_font = mission.storage.plot_parameters.standard_font_size;
     
     % Current vertical position (start from top)
     y_pos = 0.98;

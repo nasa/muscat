@@ -26,6 +26,8 @@ classdef Software_SC_Executive < handle
         this_sc_mode % [string] : Current SC mode
         this_sc_mode_value % [integer] : Current SC mode
 
+        flag_slew_sc_mode_exists % [Boolean] : Does a mode called 'Slew' exist?
+
         data % Other useful data
 
         %% [ ] Properties: Storage Variables
@@ -53,6 +55,7 @@ classdef Software_SC_Executive < handle
             obj.this_sc_mode = obj.sc_modes{1};
             obj.this_sc_mode_value = func_find_this_sc_mode_value(obj, obj.this_sc_mode);
 
+
             if isfield(init_data, 'data')
                 obj.data = init_data.data;
             else
@@ -63,6 +66,12 @@ classdef Software_SC_Executive < handle
                 obj.compute_wait_time = init_data.compute_wait_time; % [sec]
             else
                 obj.compute_wait_time = 0; % [sec]
+            end
+
+            if isfield(init_data, 'flag_slew_sc_mode_exists')
+                obj.flag_slew_sc_mode_exists = init_data.flag_slew_sc_mode_exists;
+            else
+                obj.flag_slew_sc_mode_exists = 0; 
             end
 
             % Initialize Variables to store: this_sc_mode_value time date data
@@ -78,9 +87,18 @@ classdef Software_SC_Executive < handle
 
                 case 'DART'
                     obj = func_software_SC_executive_Dart_constructor(obj, mission, i_SC);
-
+               
                 case 'Nightingale'
                     obj = func_software_SC_executive_Nightingale_constructor(obj, mission, i_SC);
+
+                case 'IBEAM'
+                    obj = func_software_SC_executive_IBEAM_constructor(obj, mission, i_SC);
+
+                case 'NISAR'
+                    obj = func_software_SC_executive_NISAR_constructor(obj, mission, i_SC);
+
+                case 'GoldenDome'
+                    obj = func_software_SC_executive_GoldenDome_constructor(obj, mission, i_SC);
 
                 otherwise
                     % Do nothing!
@@ -106,8 +124,18 @@ classdef Software_SC_Executive < handle
 
                 % Additional Storage Variables
                 switch obj.mode_software_SC_executive_selector
+
                     case 'Nightingale'
                         obj = func_update_software_SC_executive_store_Nightingale(obj, mission);
+
+                    case 'NISAR'
+                        obj = func_update_software_SC_executive_store_NISAR(obj, mission);
+
+                    case 'GoldenDome'
+                        obj = func_update_software_SC_executive_store_GoldenDome(obj, mission);
+
+                    % case 'IBEAM'
+                    %     obj = func_update_software_SC_executive_store_IBEAM(obj, mission);
 
                     otherwise
                         % Do nothing!
@@ -130,16 +158,25 @@ classdef Software_SC_Executive < handle
 
                 case 'DART'
                     obj = func_software_SC_executive_DART(obj, mission, i_SC);
-                    obj.this_sc_mode_value = func_find_this_sc_mode_value(obj, obj.this_sc_mode);
-
-
+                    
                 case 'Nightingale'
                     obj = func_software_SC_executive_Nightingale(obj, mission, i_SC);
+                    
+                case 'IBEAM'
+                    obj = func_software_SC_executive_IBEAM(obj, mission, i_SC);
+                    
+                case 'NISAR'
+                    obj = func_software_SC_executive_NISAR(obj, mission, i_SC);
 
+                case 'GoldenDome'
+                    obj = func_software_SC_executive_GoldenDome(obj, mission, i_SC);
+                    
                 otherwise
                     error('Executive mode not defined!')
             end
 
+            % Update Mode Value
+            obj.this_sc_mode_value = func_find_this_sc_mode_value(obj, obj.this_sc_mode);
 
             % Update Data Generated
             func_update_instantaneous_data_generated(mission.true_SC{i_SC}.true_SC_data_handling, obj, mission);

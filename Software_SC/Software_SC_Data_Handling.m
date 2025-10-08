@@ -42,11 +42,13 @@ classdef Software_SC_Data_Handling < handle
             obj.name = [mission.true_SC{i_SC}.true_SC_body.name, ' SW Data Handling']; % [string]
             obj.flag_executive = 0;
 
-            obj.instantaneous_data_generated_per_sample = init_data.instantaneous_data_generated_per_sample; % [kb]
+            obj.instantaneous_data_generated_per_sample = init_data.instantaneous_data_generated_per_sample; % [kb]            
 
-            obj.mode_software_SC_data_handling_selector = init_data.mode_software_SC_data_handling_selector;
-
-            obj.mode_software_SC_data_handling_selector = 'Generic';
+            if isfield(init_data, 'mode_software_SC_data_handling_selector')
+                obj.mode_software_SC_data_handling_selector = init_data.mode_software_SC_data_handling_selector;
+            else
+                obj.mode_software_SC_data_handling_selector = 'Generic';
+            end
 
             if isfield(init_data, 'data')
                 obj.data = init_data.data;
@@ -54,10 +56,9 @@ classdef Software_SC_Data_Handling < handle
                 obj.data = [];
             end
 
-            % Update Mean SoC
-            obj = func_update_mean_state_of_data_storage(obj, mission, i_SC);
-
+            % Initialize 
             obj.mean_state_of_data_storage = 0;
+            obj.total_data_storage = 0; % [kb]
 
             % Initialize Variables to store
             obj.store = [];

@@ -16,7 +16,8 @@ set(plot_handle,'PaperPositionMode','auto');
 subplot(1,2,1)
 
 for i_SC = 1:1:mission.num_SC
-    plot3(mission.true_SC{i_SC}.true_SC_navigation.store.position_relative_target(1:kd,1), mission.true_SC{i_SC}.true_SC_navigation.store.position_relative_target(1:kd,2), mission.true_SC{i_SC}.true_SC_navigation.store.position_relative_target(1:kd,3), '-','LineWidth',2, 'Color',mission.storage.plot_parameters.color_array(i_SC), 'DisplayName',mission.true_SC{i_SC}.true_SC_body.name)
+    color_index = mod(i_SC-1, length(mission.storage.plot_parameters.color_array)) + 1;
+    plot3(mission.true_SC{i_SC}.true_SC_navigation.store.position_relative_target(1:kd,1), mission.true_SC{i_SC}.true_SC_navigation.store.position_relative_target(1:kd,2), mission.true_SC{i_SC}.true_SC_navigation.store.position_relative_target(1:kd,3), '-','LineWidth',2, 'Color',mission.storage.plot_parameters.color_array(color_index), 'DisplayName',mission.true_SC{i_SC}.true_SC_body.name)
 end
 hold on
 
@@ -117,6 +118,7 @@ func_plot_target_shape(i_target, mission);
 
 grid on
 
+view(3)
 axis equal
 legend('Location','southwest')
 xlabel('X axis [km]')

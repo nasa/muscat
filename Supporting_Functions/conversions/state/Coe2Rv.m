@@ -4,6 +4,11 @@ end
 
 function rv = Coe2Rv_(oe, mu)
 
+% coe  : Classical OE
+%       (6 x 1)
+%       [a,  e,   i,   O,   w,   M]'
+%       [km, -, rad, rad, rad, rad]'
+
 a = oe(1);
 e = oe(2);
 i = oe(3);

@@ -82,6 +82,10 @@ classdef True_Time < handle
                 obj.time_step_attitude = obj.time_step;
             end
 
+            if obj.time_step_attitude > obj.time_step
+                error('Attitude time step bigger than Position time step!')
+            end
+
             obj.num_time_steps_attitude = (obj.time_step/obj.time_step_attitude); 
 
             if ~isinteger(int32(obj.num_time_steps_attitude))

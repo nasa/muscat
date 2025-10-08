@@ -30,7 +30,7 @@ mission.flag_stop_sim = 0;     % Boolean flag to stop simulation if needed
 
 init_data = [];
 init_data.t_initial = 0;                                    % [sec] Initial time
-init_data.t_final = 200000;                                 % [sec] Final time 
+init_data.t_final = 2000;                                 % [sec] Final time 
 init_data.time_step = 5;                                    % [sec] Simulation time step
 init_data.t_initial_date_string = '02-NOV-2018 00:00:00';   % Format = [DD-MMM-YYYY HH:MM:SS]
 init_data.time_step_attitude = 0.1;                         % [sec] Time step for attitude dynamics
@@ -42,7 +42,7 @@ init_data = [];
 init_data.time_step_storage = 0;
 init_data.time_step_storage_attitude = 0;
 init_data.flag_visualize_SC_attitude_orbit_during_sim = 0;  % [Boolean] Show attitude during sim
-init_data.flag_realtime_plotting = 1;      % [Boolean] Show mission data and attitude during sim
+init_data.flag_realtime_plotting = 0;      % [Boolean] Show mission data and attitude during sim
 init_data.flag_save_plots = 1;             % [Boolean] 1: Save them (takes little time), 0: Doesnt save them
 init_data.flag_save_video = 0;             % [Boolean] 1: Save them (takes more time), 0: Doesnt save them
 mission.storage = Storage(init_data, mission);
@@ -193,7 +193,7 @@ cspice_furnsh(init_data.spice_filename)
 init_data.spice_name = '-110'; % [string] : SC's SPICE Name
 
 % Sun centered - J2000 frame (inertial)
-init_data.SC_pos_vel = cspice_spkezr(init_data.spice_name,mission.true_time.date,'J2000','NONE','SUN');
+init_data.SC_pos_vel = cspice_spkezr(init_data.spice_name,mission.true_time.date,'J2000','NONE','SOLAR SYSTEM BARYCENTER');
 init_data.position = init_data.SC_pos_vel(1:3)'; % [km]
 init_data.velocity = init_data.SC_pos_vel(4:6)'; % [km/sec]
 
@@ -421,6 +421,10 @@ for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_camera
     init_data.field_of_view = 10; % [deg]
     init_data.flag_show_camera_plot = 0;
     init_data.flag_show_stars = 1;
+
+    init_data.flag_show_coverage_plot = 0;
+    init_data.wait_time_visualize_SC_camera_coverage_during_sim = 10*60; % [sec]
+    init_data.num_points = 5000; % [integer]
 
     init_data.instantaneous_data_generated_per_pixel = (1e-3)* 8; % [kb]
 
@@ -720,7 +724,6 @@ for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_commun
         init_data.RX_spacecraft = 0;               % Receiver is Ground Station (0)
         init_data.RX_spacecraft_Radio_HW = 1;      % Using GS antenna 1
 
-        init_data.flag_compute_data_rate = 0;      % Use given data rate instead of computing
         init_data.given_data_rate = 360;            % [kbps] Downlink data rate
     else
         % Uplink: Earth to Spacecraft
@@ -730,9 +733,11 @@ for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_commun
         init_data.RX_spacecraft = i_SC;            % Receiver is this spacecraft
         init_data.RX_spacecraft_Radio_HW = 1;      % Using antenna 1
 
-        init_data.flag_compute_data_rate = 0;      % Use given data rate instead of computing
         init_data.given_data_rate = 0;             % [kbps] Set low to avoid overfilling memory
     end
+
+    init_data.flag_compute_data_rate = 0;      % Use given data rate instead of computing        
+    init_data.mode_true_SC_communication_link_selector = 'Generic';
 
     % Create communication link object
     mission.true_SC{i_SC}.true_SC_communication_link{i_HW} = True_SC_Communication_Link(init_data, mission, i_SC, i_HW);

@@ -28,6 +28,10 @@ classdef Software_SC_Control_Attitude < handle
 
         desired_control_torque % [Nm] : Desired control torque
 
+        flag_slew % [Boolean] Slew is on?
+
+        desired_slew_angle_change % [deg] Angle between current attitude and desired attitude
+
         data % Other useful data
 
         desaturation_procedure % [Bool] - Is the procedure started ?
@@ -58,6 +62,7 @@ classdef Software_SC_Control_Attitude < handle
 
             obj.name = [mission.true_SC{i_SC}.true_SC_body.name, ' SW Control Attitude']; % [string]
             obj.flag_executive = 1;
+            obj.flag_slew = 0;
 
             obj.instantaneous_data_generated_per_sample = 0; % [kb]
             obj.mode_software_SC_control_attitude_selector = init_data.mode_software_SC_control_attitude_selector; % [string]
@@ -68,7 +73,6 @@ classdef Software_SC_Control_Attitude < handle
             else
                 obj.data = [];
             end
-
 
             % Update SC Data Handling Class
             func_initialize_list_HW_data_generated(mission.true_SC{i_SC}.true_SC_data_handling, obj, mission);
@@ -93,6 +97,7 @@ classdef Software_SC_Control_Attitude < handle
             obj.desaturation_procedure = 0;
             obj.desired_attitude = zeros(1,4); % [quaternion]
             obj.error_angle_desired_attitude = 0; % [rad]
+            obj.desired_slew_angle_change = 0; % [deg]
             obj.desired_control_torque = zeros(1,3); % [Toraue Vector Nm]
             obj.desired_angular_velocity = zeros(1,3); % [rad/sec]
             obj.data.integral_error = zeros(3,1); % Initialize as 3x1 vector for X/Y/Z axes
@@ -110,15 +115,16 @@ classdef Software_SC_Control_Attitude < handle
             obj.store = [];
 
             obj.store.flag_executive = zeros(mission.storage.num_storage_steps_attitude, length(obj.flag_executive));
+            obj.store.flag_slew = zeros(mission.storage.num_storage_steps_attitude, length(obj.flag_slew));
             obj.store.desaturation_procedure = zeros(mission.storage.num_storage_steps_attitude, length(obj.desaturation_procedure));
             obj.store.desired_attitude = zeros(mission.storage.num_storage_steps_attitude, length(obj.desired_attitude));
             obj.store.desired_angular_velocity = zeros(mission.storage.num_storage_steps_attitude, length(obj.desired_angular_velocity));
             obj.store.desired_control_torque = zeros(mission.storage.num_storage_steps_attitude, length(obj.desired_control_torque));
             obj.store.error_angle_desired_attitude = zeros(mission.storage.num_storage_steps_attitude, length(obj.error_angle_desired_attitude));
+            obj.store.desired_slew_angle_change = zeros(mission.storage.num_storage_steps_attitude, length(obj.desired_slew_angle_change));
 
             % Update Storage
             obj = func_update_software_SC_control_attitude_store(obj, mission);
-
 
             if isfield(init_data, 'reaction_wheel_attitude_control_threshold')
                 obj.reaction_wheel_attitude_control_threshold = init_data.reaction_wheel_attitude_control_threshold;
@@ -137,6 +143,7 @@ classdef Software_SC_Control_Attitude < handle
         function obj = func_update_software_SC_control_attitude_store(obj, mission)
             if mission.storage.flag_store_this_time_step_attitude == 1
                 obj.store.flag_executive(mission.storage.k_storage_attitude,:) = obj.flag_executive;
+                obj.store.flag_slew(mission.storage.k_storage_attitude,:) = obj.flag_slew;
                 obj.store.desaturation_procedure(mission.storage.k_storage_attitude,:) = obj.desaturation_procedure; % [quaternion]
 
                 obj.store.desired_attitude(mission.storage.k_storage_attitude,:) = obj.desired_attitude; % [quaternion]
@@ -144,6 +151,7 @@ classdef Software_SC_Control_Attitude < handle
                 obj.store.desired_control_torque(mission.storage.k_storage_attitude,:) = obj.desired_control_torque; % [Nm]
 
                 obj.store.error_angle_desired_attitude(mission.storage.k_storage_attitude,:) = obj.error_angle_desired_attitude; % [rad]
+                obj.store.desired_slew_angle_change(mission.storage.k_storage_attitude,:) = obj.desired_slew_angle_change; % [deg]
             end
         end
 
@@ -160,9 +168,15 @@ classdef Software_SC_Control_Attitude < handle
 
                     case {'DART Oracle', 'DART Control Asymptotically Stable send to ADC directly', 'DART Control PD', 'DART Control Asymptotically Stable send to actuators', 'DART Control Asymptotically Stable send to thrusters'}
                         obj = func_update_software_SC_control_attitude_DART(obj, mission, i_SC);
+                    
+                    case {'IBEAM Oracle', 'IBEAM Control Asymptotically Stable send to ADC directly', 'IBEAM Control PD', 'IBEAM Control Asymptotically Stable send to actuators', 'IBEAM Control Asymptotically Stable send to thrusters'}
+                        obj = func_update_software_SC_control_attitude_IBEAM(obj, mission, i_SC);
 
-                    case {'Nightingale Oracle', 'Nightingale Control Asymptotically Stable send to ADC directly', 'Nightingale Control PD send to ADC directly', 'Nightingale Control PD send to thrusters', 'Nightingale Control PD send to actuators', 'Nightingale Control Asymptotically Stable send to actuators', 'Nightingale Control Asymptotically Stable send to rwa', 'Nightingale Control Asymptotically Stable send to thrusters'}
+                    case {'Nightingale Oracle', 'Nightingale Slew Oracle', 'Nightingale Control Asymptotically Stable send to ADC directly', 'Nightingale Control PD send to ADC directly', 'Nightingale Control PD send to thrusters', 'Nightingale Control PD send to actuators', 'Nightingale Control Asymptotically Stable send to actuators', 'Nightingale Control Asymptotically Stable send to rwa', 'Nightingale Control Asymptotically Stable send to thrusters'}
                         obj = func_update_software_SC_control_attitude_Nightingale_v2(obj, mission, i_SC);
+
+                    case {'NISAR Oracle'}
+                        obj = func_update_software_SC_control_attitude_NISAR(obj, mission, i_SC);
 
                     otherwise
                         error('Attitude Control mode not defined!')
@@ -173,7 +187,8 @@ classdef Software_SC_Control_Attitude < handle
             end
 
             % Compute Error Angle between desired_attitude and estimated attitude
-            obj.error_angle_desired_attitude = func_error_angle_between_quaternions(obj.desired_attitude, mission.true_SC{i_SC}.software_SC_estimate_attitude.attitude); % [rad]
+            obj.error_angle_desired_attitude = min([func_error_angle_between_quaternions(obj.desired_attitude, mission.true_SC{i_SC}.software_SC_estimate_attitude.attitude), ...
+                                                    func_error_angle_between_quaternions(-obj.desired_attitude, mission.true_SC{i_SC}.software_SC_estimate_attitude.attitude)]); % [rad]
 
             % Update Storage
             obj = func_update_software_SC_control_attitude_store(obj, mission);

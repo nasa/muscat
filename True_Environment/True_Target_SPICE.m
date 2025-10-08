@@ -13,7 +13,7 @@ classdef True_Target_SPICE < handle
         %% [ ] Properties: Variables Computed Internally
 
         rotation_period % [sec] Period of one rotation
-        rotation_rate % [rad/sec]
+        rotation_rate % [deg/sec]
 
         gravity_filename % [string] Filename of the Target gravity field in a particular format
         gravity_field % Target's gravity field, computed from gravity_filename
@@ -37,9 +37,9 @@ classdef True_Target_SPICE < handle
         mu % [km^3 sec^-2] Target's standard gravitational parameter μ = GM
         mass % [kg] Mass of Target
 
-        position % [km] Current position of Target wrt Sun-centered J2000
-        velocity % [km/sec] Current velocity of Target wrt Sun-centered J2000
-        position_array % [km] Position array of Target wrt Sun-centered J2000, corresponding to time array in mission.true_time.time_position_array
+        position % [km] Current position of Target wrt Solar System Barycenter centered J2000
+        velocity % [km/sec] Current velocity of Target wrt Solar System Barycenter centered J2000
+        position_array % [km] Position array of Target wrt Solar System Barycenter centered J2000, corresponding to time array in mission.true_time.time_position_array
 
         %% [ ] Properties: Storage Variables
 
@@ -123,7 +123,6 @@ classdef True_Target_SPICE < handle
 
                     % Rotation Rate
                     obj.rotation_period = 176*3600; % [sec] https://en.wikipedia.org/wiki/4179_Toutatis
-                    obj.rotation_rate = 2*pi/obj.rotation_period; % [rad /sec]
                     warning('Toutatis is tumbling!') % http://abyss.uoregon.edu/~js/ast121/lectures/toutatis.html
 
                     % Gravity Model
@@ -158,8 +157,7 @@ classdef True_Target_SPICE < handle
 
                     % Rotation Rate
                     obj.rotation_period = 12.132*3600; % [sec] https://en.wikipedia.org/wiki/25143_Itokawa
-                    obj.rotation_rate   = 2*pi/obj.rotation_period; % [rad /sec]
-
+                    
                     % Gravity Model
                     obj.gravity_filename = 'Itokawa_CMoffset.txt';
                     obj.gravity_field = GravityField(obj.gravity_filename); % Load gravity field
@@ -189,8 +187,7 @@ classdef True_Target_SPICE < handle
                     % obj.name = '1996HW1';
 
                     % Rotation Rate
-                    obj.rotation_period = 8.762*3600; % [sec] https://echo.jpl.nasa.gov/asteroids/1996HW1/1996hw1.html
-                    obj.rotation_rate = 2*pi/obj.rotation_period; % [rad /sec]
+                    obj.rotation_period = 8.762*3600; % [sec] https://echo.jpl.nasa.gov/asteroids/1996HW1/1996hw1.html                    
 
                     % Gravity Model
                     obj.gravity_filename = '1996HW1_CMoffset.txt';
@@ -228,11 +225,11 @@ classdef True_Target_SPICE < handle
                     % Gravity Model (https://www2.csr.utexas.edu/grace/gravity/ggm02/)
                     obj.gravity_filename = [path_body_data 'Earth/ggm02c.txt'];
                     obj.gravity_field = GravityField(obj.gravity_filename); % Load gravity field
-                    if isfield(mission_init_data,'gravity_degree_harmonics')
-                        obj.gravity_degree_harmonics = mission_init_data.gravity_degree_harmonics;
+                    if isfield(init_data,'gravity_degree_harmonics')
+                        obj.gravity_degree_harmonics = init_data.gravity_degree_harmonics;
                     else
-                        obj.gravity_degree_harmonics = 8;
-                    end
+                        obj.gravity_degree_harmonics = 20;
+                    end                    
 
                     % Shape Model
                     obj.shape_model = [];
@@ -241,22 +238,26 @@ classdef True_Target_SPICE < handle
 
                     % SPICE
                     obj.spice_name = '399';
-                    obj.spice_filename = [path_body_data 'Earth/earth_200101_990825_predict.bpc'];
+                    % obj.spice_filename = [path_body_data 'Earth/earth_200101_990825_predict.bpc'];
+                    obj.spice_filename = '../../MuSCAT_Supporting_Files/SPICE/de442.bsp';
 
                     % Pole Data
                     % From https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html
                     ref_date_time = cal2sec('01-JAN-2000 00:12:00');
-                    T = (mission_true_time.t_initial_date - ref_date_time) / (365.525*86400*100); % Julian centuries from reference date
+                    T = (mission.true_time.t_initial_date - ref_date_time) / (365.525*86400*100); % Julian centuries from reference date
                     obj.pole_RA = 0.00 - 0.641 * T; % [deg]
                     obj.pole_Dec = 90.00 - 0.557 * T; % [deg]
 
                     cspice_furnsh([path_body_data 'Earth/naif0012.tls']) % Leapseconds kernel file
-                    JD_UTC = cspice_et2utc(mission_true_time.t_initial_date, 'J', 6); % Format 'JD 2446533.18834276'
+                    JD_UTC = cspice_et2utc(mission.true_time.t_initial_date, 'J', 6); % Format 'JD 2446533.18834276'
                     JD_UTC = strsplit(JD_UTC, ' ');
                     JD_UTC = str2double(JD_UTC{2});
                     JD_UT1 = JD_UTC; % Approximation, UTC is design to follow UT1 within +/- 0.9s
                     % From NASA TP 20220014814, Sec 4.3.2 Sidereal Motion
                     obj.prime_meridian = rad2deg(wrapTo2Pi(2*pi*(0.7790572732640 + 1.00273781191135448 * (JD_UT1 - 2451545.0)))); % [deg] (at t_init)
+
+                    % Use SPICE TPC file instead
+                    cspice_furnsh('../../MuSCAT_Supporting_Files/SPICE/pck00011.tpc')
 
                 case 'IBD_Asteroid'
                     % obj.name = 'IBD_Asteroid';
@@ -385,27 +386,25 @@ classdef True_Target_SPICE < handle
 
         function obj = func_main_true_target(obj,mission)
 
-            target_pos_vel_this_time = cspice_spkezr(obj.spice_name,mission.true_time.date,'J2000','NONE','SUN');
+            % Pos and Velocity from SPICE
+            target_pos_vel_this_time = cspice_spkezr(obj.spice_name,mission.true_time.date,'J2000','NONE','SOLAR SYSTEM BARYCENTER');
             obj.position = target_pos_vel_this_time(1:3)'; % [km]
             obj.velocity = target_pos_vel_this_time(4:6)'; % [km/sec]
 
-            target_pos_vel_array = (cspice_spkezr(obj.spice_name, mission.true_time.prev_date + mission.true_time.time_position_array' ,'J2000','NONE','SUN'))';
+            target_pos_vel_array = (cspice_spkezr(obj.spice_name, mission.true_time.prev_date + mission.true_time.time_position_array' ,'J2000','NONE','SOLAR SYSTEM BARYCENTER'))';
             obj.position_array = target_pos_vel_array(:,1:3);
 
-            % Small bodies
-            obj.rotation_matrix = func_compute_target_rotation_matrix(obj, mission);
-
-            % Planets
-            % obj.rotation_matrix = cspice_pxform('J2000', ['IAU_',obj.name], mission_true_time.date);
-
+            % Rotation Matrix
+            obj.rotation_matrix = func_update_target_rotation_matrix(obj, mission);
+            
             % Store
             obj = func_update_target_store(obj, mission);
         end
 
-        %% [ ] Methods: Compute Rotation Matrix
+        %% [ ] Methods: Update Rotation Matrix
         % Update target's rotation matrix for current time
 
-        function rot = func_compute_target_rotation_matrix(obj, mission)
+        function rot = func_update_target_rotation_matrix(obj, mission)
 
             switch obj.name
 
@@ -415,8 +414,20 @@ classdef True_Target_SPICE < handle
 
                     rot = cspice_pxform(fromFrame, toFrame, mission.true_time.date);
 
+                case 'Earth'
+                    fromFrame = 'IAU_EARTH';     % Body-fixed frame of Earth
+                    toFrame = 'J2000';           % Inertial frame (e.g., J2000)
+
+                    rot = cspice_pxform(fromFrame, toFrame, mission.true_time.date);
+
+                case 'Moon'
+                    fromFrame = 'IAU_MOON';      % Body-fixed frame of Earth
+                    toFrame = 'J2000';           % Inertial frame (e.g., J2000)
+
+                    rot = cspice_pxform(fromFrame, toFrame, mission.true_time.date);
+
                 otherwise
-                    theta_PM = obj.prime_meridian + obj.rotation_rate * (mission.true_time.time - mission.true_time.t_initial);
+                    theta_PM = obj.prime_meridian + obj.rotation_rate * (mission.true_time.time - mission.true_time.t_initial); % [deg]
                     Rot_Z_PM = [
                         cosd(theta_PM) sind(theta_PM) 0;
                         -sind(theta_PM) cosd(theta_PM) 0;

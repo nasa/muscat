@@ -48,11 +48,7 @@ for k = 1:1:mission.true_time.num_time_steps
 
         %% [ ] Update Software SC Executive
         func_main_software_SC_executive(mission.true_SC{i_SC}.software_SC_executive, mission, i_SC);
-
-        %% [ ] Update SC Camera
-        for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_camera
-            func_main_true_SC_camera(mission.true_SC{i_SC}.true_SC_camera{i_HW}, mission, i_SC, i_HW);
-        end
+        
 
     end
 
@@ -113,6 +109,11 @@ for k = 1:1:mission.true_time.num_time_steps
     %% For Each Spacecraft
     for i_SC = 1:1:mission.num_SC
 
+        %% [ ] Update SC Camera
+        for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_camera
+            func_main_true_SC_camera(mission.true_SC{i_SC}.true_SC_camera{i_HW}, mission, i_SC, i_HW);
+        end
+
         %% [ ] Update SC Science Radar 
         for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_science_radar
             func_main_true_SC_science_radar(mission.true_SC{i_SC}.true_SC_science_radar{i_HW}, mission, i_SC, i_HW);
@@ -121,6 +122,11 @@ for k = 1:1:mission.true_time.num_time_steps
         %% [ ] Update SC Science Processor
         for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_science_processor
             func_main_true_SC_science_processor(mission.true_SC{i_SC}.true_SC_science_processor{i_HW}, mission, i_SC);
+        end
+
+        %% [ ] Update SC Remote Sensing 
+        for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_remote_sensing
+            func_main_true_SC_remote_sensing(mission.true_SC{i_SC}.true_SC_remote_sensing{i_HW}, mission, i_SC, i_HW);
         end
 
         %% [ ] Update Software SC Communication 
@@ -155,6 +161,11 @@ for k = 1:1:mission.true_time.num_time_steps
         %% [ ] Update Chemical Thruster 
         for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster
             func_main_true_chemical_thruster(mission.true_SC{i_SC}.true_SC_chemical_thruster{i_HW}, mission, i_SC, i_HW);
+        end
+
+        %% [ ] Update EP Thruster 
+        for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_ep_thruster
+            func_main_true_ep_thruster(mission.true_SC{i_SC}.true_SC_ep_thruster{i_HW}, mission, i_SC, i_HW);
         end
 
         %% [ ] Update Fuel Tanks
@@ -214,3 +225,4 @@ end
 
 %% Close all SPICE files
 cspice_kclear
+mission.flag_stop_sim = 1;

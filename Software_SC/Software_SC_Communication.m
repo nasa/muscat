@@ -11,8 +11,6 @@ classdef Software_SC_Communication  < handle
         instantaneous_data_generated_per_sample % [kb] : Data generated per sample, in kilo bits (kb)
 
         mode_software_SC_communication_selector % [string] Different communication modes
-        % - 'DART'
-        % - 'Nightingale'
 
         attitude_error_threshold % [rad]
 
@@ -116,6 +114,12 @@ classdef Software_SC_Communication  < handle
 
                     case 'Nightingale'
                         obj = func_update_software_SC_communication_Nightingale(obj, mission, i_SC);
+
+                    case 'IBEAM'
+                        obj = func_update_software_SC_communication_IBEAM(obj, mission, i_SC);
+
+                    case 'NISAR'
+                        obj = func_update_software_SC_communication_NISAR(obj, mission, i_SC);
 
                     otherwise
                         disp('Communication mode not defined!')
