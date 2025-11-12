@@ -1,3 +1,7 @@
+# Drawio Files
+*.bkp
+*.dtmp
+
 # VS Code
 .history
 .metals
@@ -38,6 +42,7 @@
 # *.png
 *.mp4
 *.mat
+*.xlsx
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
@@ -58,5 +63,4 @@ bin
 viewpoints
 
 Test_devel
-Output/Saved
-Output/Test
+Output
