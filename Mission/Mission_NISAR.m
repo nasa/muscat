@@ -26,7 +26,7 @@ mission.num_target = 1;        % Number of Target bodies
 mission.frame = 'Relative';    % Frame type: 'Absolute', 'Relative', or 'Combined'
 mission.flag_stop_sim = 0;     % Boolean flag to stop simulation if needed
 
-mission.this_phase = 'Hurricane Helene';
+mission.this_phase = 'Texas heavy rain';
 % 1: 'Hurricane Helene' 0 UTC, 24 September 2024 to 0 UTC, 1 October 2024 (Hurricane Helene)
 % 2: 'Texas heavy rain' 0 UTC, 3 July 2025 to 12 UTC, 5 July, 2025 (Texas heavy rain)
 
@@ -37,7 +37,7 @@ init_data.t_initial = 0;                                    % [sec] Initial time
 init_data.time_step = 60;                                    % [sec] Simulation time step
 
 switch mission.this_phase
-  
+
     case 'Hurricane Helene'
         init_data.t_initial_date_string = '24-SEP-2024 00:00:00';   % Format = [DD-MMM-YYYY HH:MM:SS]
         init_data.t_final = 8*86400;                                 % [sec] Final time
@@ -60,7 +60,7 @@ mission.true_time = True_Time(init_data);
 init_data = [];
 init_data.time_step_storage = 0; % [sec] Use 0 to use the mission.true_time.time_step value
 init_data.time_step_storage_attitude = 0; % [sec] Use 0 to use the mission.true_time.time_step_attitude value
-init_data.flag_realtime_plotting = 0;      % [Boolean] Show mission data and attitude during sim
+init_data.flag_realtime_plotting = 1;      % [Boolean] Show mission data and attitude during sim
 init_data.wait_time_realtime_plotting = 60*60; % [sec] Wait time between plots (Optional)
 init_data.flag_save_plots = 1; % [Boolean] 1: Save them (takes little time), 0: Doesnt save them (Optional)
 init_data.flag_save_video = 0; % [Boolean]1 1: Save them (takes a lot more time), 0: Doesnt save them (Optional)
@@ -89,7 +89,7 @@ mission.true_solar_system = True_Solar_System(init_data, mission);
 for i_target = 1:1:mission.num_target
     init_data = [];
     init_data.target_name = 'Earth';        % Target asteroid name
-    mission.true_target{i_target} = True_Target_SPICE(init_data, mission);    
+    mission.true_target{i_target} = True_Target_SPICE(init_data, mission);
 end
 
 % mission.true_target{1}.prime_meridian = 360;
@@ -134,7 +134,7 @@ for i_HW = 1:1:mission.true_ground_station.num_GS_radio_antenna
             init_data.latitude = 64.8042; % [deg]
             init_data.longitude = -147.5002; % [deg]
 
-        case 6            
+        case 6
             init_data.name = 'Florida (Launch Communications Stations, NEN)';
             init_data.latitude = 28.542064; % [deg]
             init_data.longitude = -80.642953; % [deg]
@@ -492,7 +492,7 @@ w = 0; % [rad]
 M = 0; % [rad]
 
 switch mission.this_phase
-  
+
     case 'Hurricane Helene'
         RAAN = deg2rad(91); % [rad]
 
@@ -513,6 +513,10 @@ init_data.velocity_relative_target = rv(4:6)'; % [km/sec]
 Sun_pos = func_normalize_vec(mission.true_solar_system.SS_body{mission.true_solar_system.index_Sun}.position - mission.true_target{1}.position); % [km]
 SC_pos = func_normalize_vec(rv(1:3)'); % [km]
 Sun_Earth_SC_angle = rad2deg(func_angle_between_vectors(Sun_pos', SC_pos')) % [deg]
+
+SC_vel = func_normalize_vec(rv(4:6)'); % [km]
+SC_orbit_normal = cross(SC_pos, SC_vel);
+Sun_SC_orbit_normal_angle = rad2deg(func_angle_between_vectors(Sun_pos', SC_orbit_normal')) % [deg]
 
 init_data.name_relative_target = 'Earth';
 
@@ -635,7 +639,7 @@ end
 
 for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_solar_panel
     init_data = [];
-    init_data.instantaneous_power_consumed = 5000; % [W]
+    init_data.instantaneous_power_consumed = 10; % [W]
     init_data.instantaneous_data_rate_generated = 1.5e9; % [kbps]
     init_data.shape_model = [];
 
@@ -696,7 +700,7 @@ for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_batter
     init_data.maximum_capacity = 11000; % [W hr] (known)
     init_data.charging_efficiency = 0.96; % [float <= 1]
     init_data.discharging_efficiency = 0.96; % [float <= 1]
-    init_data.instantaneous_power_consumed = 4000; % [W]
+    init_data.instantaneous_power_consumed = 10; % [W]
     init_data.instantaneous_data_rate_generated = 7.4e6; % [kbps] i.e. 1 Byte per sec
 
     mission.true_SC{i_SC}.true_SC_battery{i_HW} = True_SC_Battery(init_data, mission, i_SC, i_HW);
@@ -1116,7 +1120,7 @@ for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_commun
         else
             error('Data rate not defined!')
         end
-        
+
     else
         % Uplink: GS to Spacecraft
         init_data.TX_spacecraft = 0;               % Transmitter is Ground Station (0)
@@ -1124,7 +1128,7 @@ for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_commun
 
         init_data.RX_spacecraft = i_SC;            % Receiver is this spacecraft
         init_data.RX_spacecraft_Radio_HW = 1;      % Using antenna 1
-        
+
         init_data.given_data_rate = 4;             % [kbps] Set low to avoid overfilling memory
     end
 

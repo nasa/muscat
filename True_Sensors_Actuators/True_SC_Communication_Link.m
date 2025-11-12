@@ -158,10 +158,12 @@ classdef True_SC_Communication_Link < handle
             switch obj.mode_true_SC_communication_link_selector
 
                 case 'Generic'
+                    % Each GS can talk to only 1 SC at a time
                     obj = func_communication_link_generic(obj, mission, i_SC);
 
-                case 'GoldenDome'
-                    obj = func_communication_link_GoldenDome(obj, mission, i_SC);
+                case 'Multi-SC per GS'
+                    % Each GS can talk to multiple SC at a time
+                    obj = func_communication_link_MultiSC_per_GS(obj, mission, i_SC);
 
                 otherwise
                     error('Comm Link not defined!')

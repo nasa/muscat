@@ -34,7 +34,9 @@ classdef True_SC_IMU < handle
 
         temperature % [deg C] : Temperature of sensor/actuator
 
-        measurement_vector % [quaternion]
+        measurement_vector % [rad/sec] Angular Velocity
+
+        rate_bias % [rad/sec] Gyro measurement bias relative to true rate
 
         measurement_time % [sec] SC time when this measurement was taken
 
@@ -69,9 +71,10 @@ classdef True_SC_IMU < handle
 
             obj.mode_true_SC_imu_selector = init_data.mode_true_SC_imu_selector; % [string]
             obj.measurement_wait_time = init_data.measurement_wait_time; % [sec]
-            obj.measurement_noise = init_data.measurement_noise; % [rad]
+            obj.measurement_noise = init_data.measurement_noise; % [rad/sec]
 
             obj.measurement_vector = zeros(1,3);
+            obj.rate_bias = zeros(1,3);
 
             obj.flag_executive = 1;
 
@@ -89,6 +92,7 @@ classdef True_SC_IMU < handle
             % Initialize Variables to store: measurement_vector
             obj.store = [];
             obj.store.measurement_vector = zeros(mission.storage.num_storage_steps, length(obj.measurement_vector));
+            obj.store.rate_bias = zeros(mission.storage.num_storage_steps, length(obj.rate_bias));
 
             % Update Storage
             obj = func_update_true_SC_imu_store(obj, mission);
@@ -107,7 +111,8 @@ classdef True_SC_IMU < handle
         function obj = func_update_true_SC_imu_store(obj, mission)
 
             if mission.storage.flag_store_this_time_step_attitude == 1
-                obj.store.measurement_vector(mission.storage.k_storage_attitude,:) = obj.measurement_vector; % [quaternion]
+                obj.store.measurement_vector(mission.storage.k_storage_attitude,:) = obj.measurement_vector; % [rad/sec]
+                obj.store.rate_bias(mission.storage.k_storage_attitude,:) = obj.rate_bias; % [rad/sec]
             end
 
         end
@@ -131,6 +136,10 @@ classdef True_SC_IMU < handle
                             obj = func_true_SC_imu_Truth(obj, mission, i_SC);
 
                         case 'Simple'
+                            obj = func_true_SC_imu_Simple(obj, mission, i_SC);
+
+                        case 'Rate bias'
+                            % TBD: include rate bias model
                             obj = func_true_SC_imu_Simple(obj, mission, i_SC);
 
                         otherwise

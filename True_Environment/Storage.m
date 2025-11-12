@@ -259,6 +259,9 @@ classdef Storage < handle
                         case 'NISAR'
                             func_visualize_SC_NISAR(mission.storage, mission, true);
 
+                        case 'NISAR 2SC'
+                            func_visualize_SC_NISAR_2SC(mission.storage, mission, true);
+
                         case 'GoldenDome'
                             func_visualize_SC_GoldenDome(mission.storage, mission, true);
 

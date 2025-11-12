@@ -144,4 +144,4 @@ end
 dataWithHeaders = [Variable_Names; cellData];
 
 % Write cell array to Excel file
-writecell(dataWithHeaders, [mission.storage.output_folder, mission.name, ' output_with_headers.xlsx']);
+writecell(dataWithHeaders, [mission.storage.output_folder, mission.name,' ',num2str(i_SC),'SC output_with_headers.xlsx']);
