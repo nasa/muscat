@@ -130,7 +130,7 @@ Tip: To make the code run fast, switch off visualization by setting line 45 in `
 
 ---
 
-## 📊 What to expect ? 
+## 📊 Simulation Results
 
 MuSCAT generates comprehensive visualizations that provide insights across all spacecraft subsystems. Below are the key visualizations with explanations of their significance.
 
@@ -151,6 +151,12 @@ The Concept of Operations (ConOps) visualization shows spacecraft operating mode
 ![Orbit](Documentation/README_Images/DART_Orbit_Vizualization.png)
 
 The orbital visualization displays the spacecraft's trajectory in 3D space, showing its position relative to celestial bodies. This example shows the DART impactor mission, and the different DeltaV points realized, as well as the estimation of position and velocity. 
+
+### SC Orbit Estimator
+
+![Orbit Estimator](Documentation/README_Images/DART_SC1_Orbit_Estimator.png)
+
+This visualization compares the true and estimated position and velocity of the spacecraft and target body over time, along with the corresponding estimation errors. It helps mission designers evaluate how well onboard orbit determination algorithms track the true trajectory under realistic sensor and dynamics modeling - important for assessing navigation accuracy ahead of critical maneuvers or close approaches.
 
 ### SC Orbit Control
 
@@ -196,11 +202,11 @@ MuSCAT's codebase is organized into logical modules that reflect spacecraft subs
 
 ### Code Composition
 
-- **MATLAB Files**: ~100 simulation modules across all directories
-- **Mission Scenarios**: 1 pre-configured example mission (DART)
+- **MATLAB Files**: ~300 simulation modules across all directories
+- **Mission Scenarios**: 3 pre-configured example missions (DART, NISAR, NISAR 2SC)
 - **Software Components**: 8 spacecraft software modules for attitude/orbit control, power, communications, etc.
-- **Hardware Models**: 18+ sensor and actuator simulations including reaction wheels, thrusters, cameras
-- **Supporting Functions**: 10+ directories with mathematical utilities, plotting functions, and conversions
+- **Hardware Models**: 23 sensor and actuator simulations including reaction wheels, thrusters, cameras
+- **Supporting Functions**: 10 directories with mathematical utilities, plotting functions, and conversions
 
 <p align="center">
 <img src="Documentation/README_Images/code_organization.png" />
@@ -237,12 +243,12 @@ This structure provides a unified interface for all components to access simulat
 
 ```matlab
 % Spacecraft subsystems
-mission.true_SC{1}.true_SC_body          % Physical properties
-mission.true_SC{1}.true_SC_navigation    % Position and velocity
-mission.true_SC{1}.true_SC_adc           % Attitude dynamics and control
-mission.true_SC{1}.true_SC_power         % Power subsystem
-mission.true_SC{1}.true_SC_camera{1}     % Camera hardware
-mission.true_SC{1}.software_SC_executive % Flight software
+mission.true_SC{1}.true_SC_body               % Physical properties
+mission.true_SC{1}.true_SC_orbit_propagation  % Position and velocity
+mission.true_SC{1}.true_SC_adc                % Attitude dynamics and control
+mission.true_SC{1}.true_SC_power              % Power subsystem
+mission.true_SC{1}.true_SC_camera{1}          % Camera hardware
+mission.true_SC{1}.software_SC_executive      % Flight software
 ```
 
 ### Dual-Loop Architecture
@@ -294,10 +300,12 @@ MuSCAT is designed to be extended without modifying core files. Instead, you can
 ```matlab
 % Example: Creating a custom mission with a specialized control mode
 % In your mission file:
-init_data.mode_software_SC_control_attitude_selector = 'YourCustomMode';
+init_data.mode_software_SC_control_attitude_selector = 'mission specific';
+init_data.mode_selector_name = 'YourCustomMode';
 
-% In Software_SC_Control_Attitude.m, add your implementation:
-function obj = func_software_SC_control_attitude_YourCustomMode(obj, mission, i_SC)
+% Add your implementation as a mission-specific function
+% (e.g., in Supporting_Functions/mission_specific/YourCustomMode/):
+function obj = func_update_software_SC_control_attitude_YourCustomMode(obj, mission, i_SC)
     % Your custom attitude control logic here
 end
 ```
