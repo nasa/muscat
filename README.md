@@ -14,7 +14,7 @@ MuSCAT employs a dual-loop architecture that efficiently handles different times
 
 MuSCAT encompasses various spacecraft subsystems including:
 
-- **Navigation** - Trajectory planning and orbital mechanics
+- **Orbit Propagation** - Trajectory planning and orbital mechanics
 - **Attitude Determination and Control** - Spacecraft orientation and stabilization
 - **Power Management** - Solar panels, batteries, and power distribution
 - **Data Handling** - Onboard computing and memory management
