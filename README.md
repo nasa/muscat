@@ -208,8 +208,10 @@ MuSCAT's codebase is organized into logical modules that reflect spacecraft subs
 - **Hardware Models**: 23 sensor and actuator simulations including reaction wheels, thrusters, cameras
 - **Supporting Functions**: 10 directories with mathematical utilities, plotting functions, and conversions
 
+The diagram below lists all of MuSCAT's classes, organized by the module they belong to.
+
 <p align="center">
-<img src="Documentation/README_Images/code_organization.png" />
+<img src="Documentation/README_Images/MuSCAT_class_diagram_Troy.png" />
 </p>
 
 ### Performance Characteristics
