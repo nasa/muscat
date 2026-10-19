@@ -12,6 +12,11 @@ classdef True_SC_Solar_Panel < handle
 
         instantaneous_data_rate_generated % [kbps] : Data rate generated during current time step, in kilo bits (kb) per sec
 
+        instantaneous_data_type = 0 % 0 = Data rate, 1 = Data per sample 
+                                    % used to avoid calling isprop() every time
+                                    % step to determine if using instantaneous_data_rate_generated or
+                                    % instantaneous_data_generated_per_sample, which is slow
+
         mass % [kg] : Mass of ith solar panel
 
         shape_model % : Shape model of Solar Panel
@@ -20,8 +25,9 @@ classdef True_SC_Solar_Panel < handle
         % - Face_reflectance_factor_solar_cell_side : ∈ [0, 1] for ith face (used for SRP)
         % - Face_reflectance_factor_opposite_side : ∈ [0, 1] for ith face (used for SRP)
         % - Face_orientation_solar_cell_side [unit vector] : Normal vector in body frame B
-        % - # Face_center [m] : Center of this Face
-        % - # Face_area [m^2]
+        % - # Face_center [m] : Vector of center of each Face
+        % - # Face_area [m^2] : Vector of Area for each face
+        % - $ Face_total_area [m^2] : Total area of all the faces
         % - type [string] : Type of shape is used for MI and volume calculations
 
         type % [string] : Solar panel type
@@ -90,17 +96,22 @@ classdef True_SC_Solar_Panel < handle
             obj.shape_model.Face_center = Face_center;
 
             % SP area from vertices
-            area = 0; % [m^2]
+            Face_total_area = 0; % [m^2]
+            Face_area = zeros(size(obj.shape_model.Faces,1),1);
             for f=1:size(obj.shape_model.Faces,1)
                 vertex_index = obj.shape_model.Faces(f,:);  % index of vertices for this face
                 a = norm(obj.shape_model.Vertices(vertex_index(1),:) - obj.shape_model.Vertices(vertex_index(2),:));
                 b = norm(obj.shape_model.Vertices(vertex_index(2),:) - obj.shape_model.Vertices(vertex_index(3),:));
                 c = norm(obj.shape_model.Vertices(vertex_index(3),:) - obj.shape_model.Vertices(vertex_index(1),:));
                 s = (a+b+c)/2;  % semi perimeter
-                area = area + sqrt(s*(s-a)*(s-b)*(s-c)); % Heron formula
+                this_face_area = sqrt(s*(s-a)*(s-b)*(s-c)); % Heron formula
+                Face_area(f) = this_face_area;
+                Face_total_area = Face_total_area + this_face_area;
             end
 
-            obj.shape_model.Face_area = area;
+            obj.shape_model.Face_center = Face_center;
+            obj.shape_model.Face_area = Face_area;
+            obj.shape_model.Face_total_area = Face_total_area;
 
             % Center of mass
             obj.shape_model.r_CM = mean(obj.shape_model.Vertices, 1); % [m]
@@ -194,15 +205,15 @@ classdef True_SC_Solar_Panel < handle
 
         function obj = func_update_SP_instantaneous_power_generated(obj, mission, i_SC)
 
-            if (obj.health == 1) && (mission.true_SC{i_SC}.true_SC_navigation.flag_visible_Sun == 1)
+            if (obj.health == 1) && (mission.true_SC{i_SC}.true_SC_orbit_propagation.flag_visible_Sun == 1)
 
-                Sun_vector = mission.true_solar_system.SS_body{mission.true_solar_system.index_Sun}.position - mission.true_SC{i_SC}.true_SC_navigation.position; % [km]
+                Sun_vector = mission.true_solar_system.SS_body{mission.true_solar_system.index_Sun}.position - mission.true_SC{i_SC}.true_SC_orbit_propagation.position; % [km]
                 
                 Sun_vector_normalized = func_normalize_vec(Sun_vector); % [unit vector]
 
                 obj.Sun_incidence_angle = real(acosd(dot(Sun_vector_normalized', mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * obj.shape_model.Face_orientation_solar_cell_side'))); % [deg]
 
-                obj.maximum_power = mission.true_solar_system.solar_constant_AU * (mission.true_solar_system.AU_distance/norm(Sun_vector))^2 * obj.shape_model.Face_area * obj.packing_fraction * obj.solar_cell_efficiency; % [W]
+                obj.maximum_power = mission.true_solar_system.solar_constant_AU * (mission.true_solar_system.AU_distance/norm(Sun_vector))^2 * obj.shape_model.Face_total_area * obj.packing_fraction * obj.solar_cell_efficiency; % [W]
 
                 if obj.Sun_incidence_angle <= 90 % [deg]
 

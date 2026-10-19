@@ -34,8 +34,8 @@ for k = 2:2:k_end
     mission_true_time.date = mission_true_time.t_initial_date + mission_true_time.time;                                     % date
     mission_true_small_body = func_update_SB_position_velocity_rot_matrix(mission_true_small_body,mission_true_time);       % SB position
     mission_true_solar_system = func_update_Sun_Earth_position_velocity(mission_true_solar_system,mission_true_time);       % SUN position
-    mission_true_SC{ms.plot_parameters.plot_SC_number}.true_SC_navigation.position = ms.true_SC{ms.plot_parameters.plot_SC_number}.position_array(kd,:)';
-    mission_true_SC{ms.plot_parameters.plot_SC_number}.true_SC_navigation.position_relative_SB = mission_true_SC{ms.plot_parameters.plot_SC_number}.true_SC_navigation.position - mission_true_small_body.position_SB;
+    mission_true_SC{ms.plot_parameters.plot_SC_number}.true_SC_orbit_propagation.position = ms.true_SC{ms.plot_parameters.plot_SC_number}.position_array(kd,:)';
+    mission_true_SC{ms.plot_parameters.plot_SC_number}.true_SC_orbit_propagation.position_relative_SB = mission_true_SC{ms.plot_parameters.plot_SC_number}.true_SC_orbit_propagation.position - mission_true_small_body.position_SB;
     mission_true_SC{ms.plot_parameters.plot_SC_number}.true_SC_adc.attitude = ms.true_SC{ms.plot_parameters.plot_SC_number}.SC_Quaternion(k,:)';
     mission_true_SC{ms.plot_parameters.plot_SC_number}.true_SC_adc = func_update_rotation_matrix(mission_true_SC{ms.plot_parameters.plot_SC_number}.true_SC_adc);
     

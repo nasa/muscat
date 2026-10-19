@@ -12,6 +12,11 @@ classdef True_SC_Sun_Sensor < handle
 
         instantaneous_data_generated_per_sample % [kb] : Data generated per sample, in kilo bits (kb)
 
+        instantaneous_data_type = 1 % 0 = Data rate, 1 = Data per sample 
+                                    % used to avoid calling isprop() every time
+                                    % step to determine if using instantaneous_data_rate_generated or
+                                    % instantaneous_data_generated_per_sample, which is slow
+
         mode_true_SC_sun_sensor_selector % [string]
         % - Truth
         % - Simple
@@ -141,7 +146,7 @@ classdef True_SC_Sun_Sensor < handle
 
                             this_orientation = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * obj.orientation')'; % [unit vector]
 
-                            Sun_vector = mission.true_solar_system.SS_body{mission.true_solar_system.index_Sun}.position - mission.true_SC{i_SC}.true_SC_navigation.position; % [km]
+                            Sun_vector = mission.true_solar_system.SS_body{mission.true_solar_system.index_Sun}.position - mission.true_SC{i_SC}.true_SC_orbit_propagation.position; % [km]
                             Sun_vector_normalized = func_normalize_vec(Sun_vector); % [unit vector]
 
                             if func_angle_between_vectors(this_orientation, Sun_vector_normalized) <= deg2rad(obj.field_of_view)
@@ -205,8 +210,8 @@ classdef True_SC_Sun_Sensor < handle
             error_quaternion = [sin(error_angle/2) * error_axis, cos(error_angle/2)];
             error_quaternion = func_quaternion_properize(error_quaternion);
 
-            % Apply the error by quaternion multiplication (Hamilton product)
-            obj.measurement_vector = func_quaternion_multiply(mission.true_SC{i_SC}.true_SC_adc.attitude, error_quaternion);
+            % Apply the error by quaternion multiplication
+            obj.measurement_vector = func_quaternion_multiply(error_quaternion, mission.true_SC{i_SC}.true_SC_adc.attitude);
             obj.measurement_vector = func_quaternion_properize(obj.measurement_vector);
 
         end

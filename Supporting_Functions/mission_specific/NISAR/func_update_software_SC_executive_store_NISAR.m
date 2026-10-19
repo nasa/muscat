@@ -14,3 +14,4 @@ obj.store.SC_Target_Sun_angle(mission.storage.k_storage,:) = obj.data.SC_Target_
 obj.store.flag_Recharge(mission.storage.k_storage,:) = obj.data.flag_Recharge;
 obj.store.Telecom_GS_index(mission.storage.k_storage,:) = obj.data.Telecom_GS_index;
 
+end

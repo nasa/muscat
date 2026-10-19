@@ -10,6 +10,8 @@ classdef True_Ground_Station < handle
 
         num_GS_radio_antenna % [integer] Number of GS Radio Antenna
 
+        num_GS_enterprise % [integer] Number of Software GS Enterprises (Optional)
+
         %% [ ] Properties: Variables Computed Internally
 
         instantaneous_data_transmitted % [kb] Data transmitted by GS over mission.true_time.time_step sec
@@ -54,11 +56,17 @@ classdef True_Ground_Station < handle
             obj.total_data_received = 0; % [kb]
 
             obj.list_HW_data_transmitted = [];
-            obj.array_HW_data_transmitted = []; 
-            obj.list_HW_data_received = []; 
-            obj.array_HW_data_received = []; 
+            obj.array_HW_data_transmitted = [];
+            obj.list_HW_data_received = [];
+            obj.array_HW_data_received = [];
 
-            obj.warning_counter = 0; 
+            obj.warning_counter = 0;
+
+            if isfield(init_data, 'num_GS_enterprise')
+                obj.num_GS_enterprise = init_data.num_GS_enterprise;
+            else
+                obj.num_GS_enterprise = 0;
+            end
 
             if isfield(init_data, 'data')
                 obj.data = init_data.data;
@@ -125,7 +133,7 @@ classdef True_Ground_Station < handle
 
             if flag_name_exisits == 0
                 i = length(obj.list_HW_data_received);
-                obj.list_HW_data_received{i+1} = this_name;                
+                obj.list_HW_data_received{i+1} = this_name;
 
                 if isprop(equipment, 'instantaneous_data_rate_received')
                     this_instantaneous_data_received = (equipment.instantaneous_data_rate_received * mission.true_time.time_step); % [kb]
@@ -263,8 +271,8 @@ classdef True_Ground_Station < handle
 
         end
 
+             
 
-        
     end
 end
 

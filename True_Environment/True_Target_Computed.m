@@ -24,6 +24,9 @@ classdef True_Target_Computed < handle
         % – shape_model.Faces : Triplet of vertex indices define a face
         shape_model_type % [string] Type of shape model
         radius % [km] Radius of Target
+        area_weighted_mean_radius % [km] Average shape-model-face-area-weighted radius
+        min_radius % [km] Minimum shape model radius
+        max_radius % [km] Maximum shape model radius
 
         pole_RA % [deg] Right Ascension (RA) of Target's pole
         pole_Dec % [deg] Declination (DEC) of Target's pole
@@ -37,21 +40,22 @@ classdef True_Target_Computed < handle
         mu % [km^3 sec^-2] Target's standard gravitational parameter μ = GM
         mass % [kg] Mass of Target
 
-        position % [km] Current position of Target wrt Solar System Barycenter centered J2000
-        velocity % [km/sec] Current velocity of Target wrt Solar System Barycenter centered J2000
-        position_array % [km] Position array of Target wrt Solar System Barycenter centered J2000, corresponding to time array in mission.true_time.time_position_array
-        prev_velocity % [km/sec] Previous velocity of Target wrt Solar System Barycenter centered J2000 at the previous time step
-        acceleration % [km/sec^2] Current acceleration of Target wrt Solar System Barycenter centered J2000
+        position % [km] Current position of Target wrt SUN centered J2000
+        velocity % [km/sec] Current velocity of Target wrt SUN centered J2000
+        position_array % [km] Position array of Target wrt SUN centered J2000, corresponding to time array in mission.true_time.time_position_array
+        prev_velocity % [km/sec] Previous velocity of Target wrt SUN centered J2000 at the previous time step
+        acceleration % [km/sec^2] Current acceleration of Target wrt SUN centered J2000
 
-        acceleration_SS_body % [km/sec^2] Current acceleration of Target wrt Solar System Barycenter centered J2000 due to Solar System bodies
+        acceleration_SS_body % [km/sec^2] Current acceleration of Target wrt SUN centered J2000 due to Solar System bodies
 
-        position_SPICE % [km] Current position of Target wrt Solar System Barycenter centered J2000
-        velocity_SPICE % [km/sec] Current velocity of Target wrt Solar System Barycenter centered J2000
-        prev_velocity_SPICE % [km/sec] Previous velocity of Target wrt Solar System Barycenter centered J2000 at the previous time step
-        position_array_SPICE % [km] Position array of Target wrt Solar System Barycenter centered J2000, corresponding to time array in mission.true_time.time_position_array
-        acceleration_SPICE % [km/sec^2] Current acceleration of Target wrt Solar System Barycenter centered J2000
+        position_SPICE % [km] Current position of Target wrt SUN centered J2000
+        velocity_SPICE % [km/sec] Current velocity of Target wrt SUN centered J2000
+        prev_velocity_SPICE % [km/sec] Previous velocity of Target wrt SUN centered J2000 at the previous time step
+        position_array_SPICE % [km] Position array of Target wrt SUN centered J2000, corresponding to time array in mission.true_time.time_position_array
+        acceleration_SPICE % [km/sec^2] Current acceleration of Target wrt SUN centered J2000
 
         control_force % [N] : Control force vector that passes through Center of Mass of SB
+        control_torque % [Nm] : Net torque vector acting on the target body due to EP thrusters
         disturbance_force % [N] : Disturbance force vector that passes through Center of Mass of SB
         SRP_disturbance_force % [N] : SRP-only disturbance force vector that passes through Center of Mass of SB
         Yarkovsky_disturbance_force % [N] : Yarkovsky-only disturbance force vector that passes through Center of Mass of SB
@@ -111,14 +115,135 @@ classdef True_Target_Computed < handle
                     %       2027 JAN 01 00:00:00.000            2030 JAN 01 00:00:00.000
 
 
-                    obj.spice_filename = [path_body_data 'Apophis/apophis_v2.bsp'];
-                    obj.spice_name = '20099942';
-                    % Summary for: ../../../SB_data/Apophis/apophis_v2.bsp
+                    % obj.spice_filename = [path_body_data 'Apophis/apophis_v2.bsp'];
+                    % obj.spice_name = '20099942';
+                    % % Summary for: ../../../SB_data/Apophis/apophis_v2.bsp
+                    % %
+                    % % Body: 20099942
+                    % %       Start of Interval (ET)              End of Interval (ET)
+                    % %       -----------------------------       -----------------------------
+                    % %       2025 AUG 07 00:00:00.000            2032 SEP 06 00:00:00.000
+
+                    
+                    % TRIAL
+                    % obj.spice_filename = [path_body_data 'Apophis/apophis1_Shyam.bsp'];
+                    % obj.spice_name = '2099942';
+                    % Summary for: ../../../SB_data/Apophis/apophis1_Shyam.bsp
+                    %
+                    % Body: 2099942
+                    %       Start of Interval (ET)              End of Interval (ET)
+                    %       -----------------------------       -----------------------------
+                    %       2027 APR 27 00:00:00.000            2029 APR 10 00:00:00.000
+                    %
+
+
+                    % obj.spice_filename = [path_body_data 'Apophis/apophis2_Shyam.bsp'];
+                    % obj.spice_name = '2099942';
+                    % Summary for: ../../../SB_data/Apophis/apophis2_Shyam.bsp
+                    %
+                    % Body: 2099942
+                    %       Start of Interval (ET)              End of Interval (ET)
+                    %       -----------------------------       -----------------------------
+                    %       2027 APR 27 00:00:00.000            2029 APR 10 00:00:00.000
+
+                    % obj.spice_filename = [path_body_data 'Apophis/apophis3_Shyam.bsp'];
+                    % obj.spice_name = '2099942';
+                    % Summary for: ../../../SB_data/Apophis/apophis3_Shyam.bsp
+                    %
+                    % Body: 2099942
+                    %       Start of Interval (ET)              End of Interval (ET)
+                    %       -----------------------------       -----------------------------
+                    %       2027 APR 27 00:00:00.000            2029 APR 10 00:00:00.000
+
+                    % obj.spice_filename = [path_body_data 'Apophis/apophis4_Shyam.bsp'];
+                    % obj.spice_name = '2099942';
+                    %                     Summary for: ../../../SB_data/Apophis/apophis4_Shyam.bsp
+                    %
+                    % Body: 2099942
+                    %       Start of Interval (ET)              End of Interval (ET)
+                    %       -----------------------------       -----------------------------
+                    %       2027 APR 27 00:00:00.000            2029 APR 10 00:00:00.000
+
+                    % obj.spice_filename = [path_body_data 'Apophis/apophis5_Shyam.bsp'];
+                    % obj.spice_name = '2099942';
+                    % Summary for: ../../../SB_data/Apophis/apophis5_Shyam.bsp
+                    % 
+                    % Body: 2099942
+                    % Start of Interval (ET)              End of Interval (ET)
+                    % -----------------------------       -----------------------------
+                    % 2027 APR 27 00:00:00.000            2029 APR 10 00:00:00.000
+
+                    % obj.spice_filename = '../../MuSCAT_Supporting_Files/SB_data/Apophis/apophis6_Shyam_jup.bsp';
+                    % obj.spice_name = '2099942';
+                    % Summary for: ../../../SB_data/Apophis/apophis6_Shyam_jup.bsp
+                    %
+                    % Body: 2099942
+                    %       Start of Interval (ET)              End of Interval (ET)
+                    %       -----------------------------       -----------------------------
+                    %       2027 APR 27 00:00:00.000            2029 APR 10 00:00:00.000
+
+                    obj.spice_filename = '../../MuSCAT_Supporting_Files/SB_data/Apophis/apophis7_Shyam_allbodies.bsp';
+                    obj.spice_name = '2099942';
+                    % Summary for: ../../../SB_data/Apophis/apophis7_Shyam_allbodies.bsp
+                    %
+                    % Body: 2099942
+                    %       Start of Interval (ET)              End of Interval (ET)
+                    %       -----------------------------       -----------------------------
+                    %       2027 APR 27 00:00:00.000            2029 APR 10 00:00:00.000
+
+
+                    % obj.spice_filename = '../../MuSCAT_Supporting_Files/SB_data/Apophis/apophis8_Shyam_scmerged.bsp';
+                    % obj.spice_name = '20099942';
+                    % Summary for: ../../../SB_data/Apophis/apophis8_Shyam_scmerged.bsp
+                    %
+                    % Body: -100
+                    %       Start of Interval (ET)              End of Interval (ET)
+                    %       -----------------------------       -----------------------------
+                    %       2027 APR 27 00:00:00.000            2027 APR 27 16:00:00.000
                     %
                     % Body: 20099942
                     %       Start of Interval (ET)              End of Interval (ET)
                     %       -----------------------------       -----------------------------
-                    %       2025 AUG 07 00:00:00.000            2032 SEP 06 00:00:00.000
+                    %       2027 JAN 01 00:01:09.183            2031 JAN 31 00:01:09.184
+
+
+                    % Pole Data
+                    obj.pole_RA = 250; % [deg]
+                    obj.pole_Dec = -75; % [deg]
+                    obj.prime_meridian = 0; % [deg] (at t_init)
+
+
+                    obj.Bond_Albedo = 0.14;
+                    obj.SRP_reflectance_factor = 1 + ((4/9)*obj.Bond_Albedo);
+                    obj.Gamma = 600; % [J m^-2 K^-1 s^-0.5] Thermal inertia
+                    obj.eps = 0.9; % Emissivity
+
+                case 'Apophis 25-meter-radius'
+                    % obj.name = 'Apophis 50-meter';
+
+                    obj.rotation_period = (360/3.155588020452885e+02)*86400; % [sec] From SPICE
+
+                    % Gravity Model
+                    obj.gravity_filename = [path_body_data 'Apophis/Apophis_CMoffset_25m_radius.txt'];
+                    obj.gravity_field = GravityField(obj.gravity_filename); % Load gravity field
+                    obj.gravity_degree_harmonics = 0;
+
+                    % Shape Model
+                    obj_shape = readObj([path_body_data 'Apophis/ApophisModel1.obj']);
+                    obj.shape_model = [];
+                    obj.shape_model_type = 'trisurf';
+                    obj.shape_model.Vertices = obj.gravity_field.R * 1e3 * obj_shape.v; % [m]
+                    obj.shape_model.Faces = obj_shape.f.v;
+
+                    % SPICE                    
+                    obj.spice_filename = '../../MuSCAT_Supporting_Files/SB_data/Apophis/apophis7_Shyam_allbodies.bsp';
+                    obj.spice_name = '2099942';
+                    % Summary for: ../../../SB_data/Apophis/apophis7_Shyam_allbodies.bsp
+                    %
+                    % Body: 2099942
+                    %       Start of Interval (ET)              End of Interval (ET)
+                    %       -----------------------------       -----------------------------
+                    %       2027 APR 27 00:00:00.000            2029 APR 10 00:00:00.000
 
 
                     % Pole Data
@@ -162,13 +287,13 @@ classdef True_Target_Computed < handle
 
             % Initialize position, velocity, and rotation matrix
 
-            target_pos_vel_this_time = cspice_spkezr(obj.spice_name,mission.true_time.date,'J2000','NONE','SOLAR SYSTEM BARYCENTER');
+            target_pos_vel_this_time = cspice_spkezr(obj.spice_name,mission.true_time.date,'J2000','NONE','SUN');
             obj.position_SPICE = target_pos_vel_this_time(1:3)'; % [km]
             obj.velocity_SPICE = target_pos_vel_this_time(4:6)'; % [km/sec]
             obj.acceleration_SPICE = [0 0 0]; % [km/sec^2]
             obj.prev_velocity_SPICE = obj.velocity_SPICE; % [km/sec]
 
-            target_pos_vel_array = (cspice_spkezr(obj.spice_name, mission.true_time.prev_date + mission.true_time.time_position_array' ,'J2000','NONE','SOLAR SYSTEM BARYCENTER'))';
+            target_pos_vel_array = (cspice_spkezr(obj.spice_name, mission.true_time.prev_date + mission.true_time.time_position_array' ,'J2000','NONE','SUN'))';
             obj.position_array_SPICE = target_pos_vel_array(:,1:3); % [km]
 
             obj.position = obj.position_SPICE; % [km]
@@ -176,15 +301,73 @@ classdef True_Target_Computed < handle
             obj.position_array = obj.position_array_SPICE; % [km]
             obj.acceleration = [0 0 0]; % [km/sec^2]
             obj.prev_velocity = obj.velocity; % [km/sec]
-
+            
+            % Update Accleration due to Solar System Bodies
             obj.acceleration_SS_body = zeros(1,3*mission.true_solar_system.num_SS_body); % [km/sec^2]
+            obj= func_update_SS_Body_disturbance_force(obj, mission);
 
             % Rotation Matrix
             obj.rotation_matrix = func_update_target_rotation_matrix(obj, mission);
 
+            % Compute the average radius from the shape model faces
+            % Extract Vertices and Faces
+            V = obj.shape_model.Vertices;
+            F = obj.shape_model.Faces; % Nx3 array of vertex indices
+
+            % Extract the coordinates for the three vertices of every triangular face
+            v1 = V(F(:, 1), :);
+            v2 = V(F(:, 2), :);
+            v3 = V(F(:, 3), :);
+
+            % 1. Calculate the signed volume of the tetrahedron formed by the origin and each face
+            % Volume = 1/6 * scalar triple product of the vertices: v1 dot (v2 cross v3)
+            cross_v2_v3 = cross(v2, v3, 2);
+            tetra_volumes = dot(v1, cross_v2_v3, 2) / 6;
+
+            % Sum the signed volumes to get the total volume of the asteroid
+            total_volume_signed = sum(tetra_volumes);
+
+            % 2. Calculate the centroid of each individual tetrahedron
+            % Centroid of a tetrahedron is the average of its 4 vertices (v1, v2, v3, and Origin(0,0,0))
+            tetra_centroids = (v1 + v2 + v3) / 4;
+
+            % 3. Calculate the overall Center of Mass (Volume Centroid)
+            % Weight each tetrahedron's centroid by its volume, sum them, and divide by total volume
+            COM_SB = sum(tetra_centroids .* tetra_volumes, 1) / total_volume_signed;
+
+            % Shift vertices so the origin is exactly at the centroid (COM)
+            % Note: If your COM was computed via mean(V), that is technically mesh-density dependent too.
+            % The true volume-centroid is better, but shifting by your existing COM works for this step.
+            V = V - COM_SB;
+
+            % Extract the 3D coordinates for the 3 vertices of every face
+            v1 = V(F(:, 1), :);
+            v2 = V(F(:, 2), :);
+            v3 = V(F(:, 3), :);
+
+            % Compute the normal vector (cross product of two edges) for every face
+            cross_prods = cross(v2 - v1, v3 - v1, 2);
+
+            % Compute the Surface Area of each face (1/2 * magnitude of cross product)
+            face_areas = 0.5 * vecnorm(cross_prods, 2, 2);
+            total_area = sum(face_areas);
+
+            %% METHOD 1: Area-Weighted Average Radius
+            % Find the center point of each triangle
+            face_centroids = (v1 + v2 + v3) / 3;
+
+            % Find distance from Asteroid COM to each face centroid
+            face_radii = vecnorm(face_centroids, 2, 2);
+
+            % Weight each radius by the physical area of its face
+            obj.area_weighted_mean_radius = sum(face_radii .* face_areas) / total_area * 1e-3; % [km]
+            obj.min_radius = min(face_radii);
+            obj.max_radius = max(face_radii);
+
             % Variables for Integration
             obj.ode_options = odeset('RelTol',1e-20,'AbsTol',1e-20);
             obj.control_force = [0 0 0]; % [N]
+            obj.control_torque = [0 0 0]; % [Nm]
             obj.disturbance_force = [0 0 0]; % [N]
             obj.SRP_disturbance_force = [0 0 0]; % [N]
             obj.Yarkovsky_disturbance_force = [0 0 0]; % [N]
@@ -204,9 +387,12 @@ classdef True_Target_Computed < handle
             obj.store.acceleration_SPICE = zeros(mission.storage.num_storage_steps, length(obj.acceleration_SPICE));
 
             obj.store.control_force = zeros(mission.storage.num_storage_steps, length(obj.control_force));
+            obj.store.control_torque = zeros(mission.storage.num_storage_steps, length(obj.control_torque));
             obj.store.disturbance_force = zeros(mission.storage.num_storage_steps, length(obj.disturbance_force));
             obj.store.SRP_disturbance_force = zeros(mission.storage.num_storage_steps, length(obj.SRP_disturbance_force));
             obj.store.Yarkovsky_disturbance_force = zeros(mission.storage.num_storage_steps, length(obj.Yarkovsky_disturbance_force));
+            obj.store.control_force = zeros(mission.storage.num_storage_steps, 3);
+            obj.store.control_torque = zeros(mission.storage.num_storage_steps, 3);
 
             obj = func_update_target_store(obj, mission);
 
@@ -228,6 +414,7 @@ classdef True_Target_Computed < handle
                 obj.store.acceleration_SPICE(mission.storage.k_storage,:) = obj.acceleration_SPICE; % [km/sec^2]
 
                 obj.store.control_force(mission.storage.k_storage,:) = obj.control_force; % [N]
+                obj.store.control_torque(mission.storage.k_storage,:) = obj.control_torque; % [Nm]
                 obj.store.disturbance_force(mission.storage.k_storage,:) = obj.disturbance_force; % [N]
                 obj.store.SRP_disturbance_force(mission.storage.k_storage,:) = obj.SRP_disturbance_force; % [N]
                 obj.store.Yarkovsky_disturbance_force(mission.storage.k_storage,:) = obj.Yarkovsky_disturbance_force; % [N]
@@ -241,13 +428,17 @@ classdef True_Target_Computed < handle
 
         function obj = func_main_true_target(obj,mission)
 
+            this_time_array = mission.true_time.time_position_array;
+            nTimes = length(this_time_array);
+
             % Pos and Velocity from SPICE
-            target_pos_vel_this_time = cspice_spkezr(obj.spice_name,mission.true_time.date,'J2000','NONE','SOLAR SYSTEM BARYCENTER');
+            target_pos_vel_this_time = cspice_spkezr(obj.spice_name,mission.true_time.date,'J2000','NONE','SUN');
             obj.position_SPICE = target_pos_vel_this_time(1:3)'; % [km]
             obj.velocity_SPICE = target_pos_vel_this_time(4:6)'; % [km/sec]
             obj.acceleration_SPICE = (obj.velocity_SPICE - obj.prev_velocity_SPICE)/mission.true_time.time_step; % [km/sec^2]
 
-            target_pos_vel_array = (cspice_spkezr(obj.spice_name, mission.true_time.prev_date + mission.true_time.time_position_array' ,'J2000','NONE','SOLAR SYSTEM BARYCENTER'))';
+            target_pos_vel_array = (cspice_spkezr(obj.spice_name, mission.true_time.prev_date + this_time_array',...
+                'J2000','NONE','SUN'))';
             obj.position_array_SPICE = target_pos_vel_array(:,1:3);
 
             % Rotation Matrix
@@ -264,16 +455,26 @@ classdef True_Target_Computed < handle
             obj = func_update_Yarkovsky_disturbance_force(obj, mission);
             obj.disturbance_force = obj.disturbance_force + obj.Yarkovsky_disturbance_force; % [N]
 
-
             % Compute Pos and Velocity using Integration
             this_SB_pos_vel_t0 = [obj.position, obj.velocity];
 
-            odefun =   @(t,X) func_orbit_inertial_static_SB_v3( t, X, obj, mission);
+            % odefun =   @(t,X) func_orbit_inertial_static_SB_v6_Sun_centered( t, X, obj, mission);
 
-            [T,X]=ode15s(odefun, mission.true_time.time_position_array, this_SB_pos_vel_t0', obj.ode_options);
+            % [T,X]=ode15s(odefun, mission.true_time.time_position_array, this_SB_pos_vel_t0', obj.ode_options);
+            % [~,X]=ode45(odefun, mission.true_time.time_position_array, this_SB_pos_vel_t0', obj.ode_options);
+            % obj.position = X(end,1:3); % [km]
+            % obj.velocity = X(end,4:6); % [km/sec]
 
+            % Execute RK4 time steps to integrate over the time vector
+            X = zeros(nTimes, length(this_SB_pos_vel_t0));
+            X(1,:) = this_SB_pos_vel_t0(:).';
+            for ii = 2:nTimes
+                X(ii,:) = Integrators.rk4(@(t,X) func_orbit_inertial_static_SB_v6_Sun_centered(t, X, obj, mission), ...
+                    this_time_array(ii-1), X(ii-1,:).', mission.true_time.time_step_position_array);
+            end
             obj.position = X(end,1:3); % [km]
             obj.velocity = X(end,4:6); % [km/sec]
+
             obj.acceleration = (obj.velocity - obj.prev_velocity)/mission.true_time.time_step; % [km/sec^2]
 
             if length(mission.true_time.time_position_array) == 2
@@ -292,7 +493,10 @@ classdef True_Target_Computed < handle
 
             % Reset Forces and Previous Velocity
             obj.control_force = [0 0 0]; % [N]
+            obj.control_torque = [0 0 0]; % [Nm]
             obj.disturbance_force = [0 0 0]; % [N]
+            obj.SRP_disturbance_force = [0 0 0]; % [N]
+            obj.Yarkovsky_disturbance_force = [0 0 0]; % [N]
             
             obj.prev_velocity = obj.velocity; % [km/sec]
             obj.prev_velocity_SPICE = obj.velocity_SPICE; % [km/sec]
@@ -449,10 +653,14 @@ classdef True_Target_Computed < handle
             aY_kmps2 = (a_t_mps2 / 1000) * that; % [km/sec^2]
 
             obj.Yarkovsky_disturbance_force = (1e3) * aY_kmps2 * obj.mass; % [N]
-
+            
         end
 
 
     end
+
+
+
 end
+
 

@@ -31,6 +31,8 @@ classdef True_SC_Data_Handling < handle
 
         data % Other useful data
 
+        mode_selector_name % [string] Alternative name of mode
+
         %% [ ] Properties: Storage Variables
 
         store
@@ -67,6 +69,12 @@ classdef True_SC_Data_Handling < handle
             end
             obj.data.store_instantaneous_data_change = obj.instantaneous_data_change; % [kb]
 
+            if isfield(init_data, 'mode_selector_name')
+                obj.mode_selector_name = init_data.mode_selector_name;
+            else
+                obj.mode_selector_name = mission.name;
+            end
+
             % Initialize Variables to store
             obj.store = [];
 
@@ -94,9 +102,9 @@ classdef True_SC_Data_Handling < handle
                 i = length(obj.list_HW_data_generated);
                 obj.list_HW_data_generated{i+1} = this_name;
 
-                if isprop(equipment, 'instantaneous_data_rate_generated')
+                if equipment.instantaneous_data_type == 0 % isprop(equipment, 'instantaneous_data_rate_generated')
                     this_instantaneous_data_generated = (equipment.instantaneous_data_rate_generated * mission.true_time.time_step); % [kb]
-                elseif isprop(equipment, 'instantaneous_data_generated_per_sample')
+                elseif equipment.instantaneous_data_type == 1 %isprop(equipment, 'instantaneous_data_generated_per_sample')
                     this_instantaneous_data_generated = equipment.instantaneous_data_generated_per_sample; % [kb]
                 else
                     error('Data generated incorrect!')
@@ -184,12 +192,14 @@ classdef True_SC_Data_Handling < handle
 
             switch obj.mode_true_SC_data_handling_selector
 
+                case 'mission specific'
+                        func_name = ['func_update_true_SC_data_handling_', obj.mode_selector_name];
+                        this_func_handle = str2func(func_name);
+                        obj = this_func_handle(obj, mission, i_SC);
+
                 case 'Generic'
-                    obj = func_true_SC_data_handling_Generic(obj, mission, i_SC);
-
-                case 'Nightingale'
-                    obj = func_true_SC_data_handling_Nightingale(obj, mission, i_SC);
-
+                    obj = func_update_true_SC_data_handling_Generic(obj, mission, i_SC);
+                
                 otherwise
                     error('Data Handling mode not defined!')
             end
@@ -204,10 +214,10 @@ classdef True_SC_Data_Handling < handle
 
         end
 
-        %% [ ] Methods: Main Function for Generic
+        %% [ ] Methods: Update Generic Data Handling
         % Generic data handling code
 
-        function obj = func_true_SC_data_handling_Generic(obj, mission, i_SC)
+        function obj = func_update_true_SC_data_handling_Generic(obj, mission, i_SC)
 
             obj.instantaneous_data_change = (obj.instantaneous_data_generated - obj.instantaneous_data_removed); % [kb]
             obj.data.store_instantaneous_data_change = obj.instantaneous_data_change; % [kb]
@@ -295,9 +305,9 @@ classdef True_SC_Data_Handling < handle
 
         function obj = func_update_instantaneous_data_generated(obj, equipment, mission, varargin)
 
-            if isprop(equipment, 'instantaneous_data_rate_generated')
+            if equipment.instantaneous_data_type == 0 % isprop(equipment, 'instantaneous_data_rate_generated')
                 this_instantaneous_data_generated = (equipment.instantaneous_data_rate_generated * mission.true_time.time_step); % [kb]
-            elseif isprop(equipment, 'instantaneous_data_generated_per_sample')
+            elseif equipment.instantaneous_data_type == 1 % isprop(equipment, 'instantaneous_data_generated_per_sample')
                 this_instantaneous_data_generated = equipment.instantaneous_data_generated_per_sample; % [kb]
             else
                 error('Data generated incorrect!')
@@ -336,9 +346,9 @@ classdef True_SC_Data_Handling < handle
 
         function obj = func_update_instantaneous_data_generated_attitude(obj, equipment, mission, varargin)
 
-            if isprop(equipment, 'instantaneous_data_rate_generated')
+            if equipment.instantaneous_data_type == 0 % isprop(equipment, 'instantaneous_data_rate_generated')
                 this_instantaneous_data_generated = (equipment.instantaneous_data_rate_generated * mission.true_time.time_step_attitude); % [kb]
-            elseif isprop(equipment, 'instantaneous_data_generated_per_sample')
+            elseif equipment.instantaneous_data_type == 1 % isprop(equipment, 'instantaneous_data_generated_per_sample')
                 this_instantaneous_data_generated = equipment.instantaneous_data_generated_per_sample; % [kb]
             else
                 error('Data generated incorrect!')

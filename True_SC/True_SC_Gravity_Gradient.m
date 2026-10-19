@@ -59,11 +59,11 @@ classdef True_SC_Gravity_Gradient < handle
 
             if obj.enable_G2 == 1
                 % Gravity direction from SB
-                Rc = 1e3*(mission.true_SC{i_SC}.true_SC_navigation.position_relative_target);     %[m]
+                Rc = 1e3*(mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target);     %[m]
                 Rc_sc = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix') * Rc';         %[m]
                 
                 % Gravity gradient torque [Nm]
-                obj.disturbance_torque_G2 = ( (3*(mission.true_target{mission.true_SC{i_SC}.true_SC_navigation.index_relative_target}.mu * 1e9)/(norm(Rc_sc)^5)) * cross(Rc_sc, mission.true_SC{i_SC}.true_SC_body.total_MI *Rc_sc) )';
+                obj.disturbance_torque_G2 = ( (3*(mission.true_target{mission.true_SC{i_SC}.true_SC_orbit_propagation.index_relative_target}.mu * 1e9)/(norm(Rc_sc)^5)) * cross(Rc_sc, mission.true_SC{i_SC}.true_SC_body.total_MI *Rc_sc) )';
                 
                 % Accumulate disturbances
                 mission.true_SC{i_SC}.true_SC_adc.disturbance_torque = mission.true_SC{i_SC}.true_SC_adc.disturbance_torque + obj.disturbance_torque_G2;

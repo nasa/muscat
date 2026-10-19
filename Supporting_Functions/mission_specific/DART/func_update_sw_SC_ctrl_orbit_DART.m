@@ -1,6 +1,6 @@
-%% [ ] Methods: Main for DART
+%% [ ] Methods: Control Orbit for DART
 
-function obj = func_update_software_SC_control_orbit_DART(obj, mission, i_SC)
+function obj = func_update_sw_SC_ctrl_orbit_DART(obj, mission, i_SC)
 
 % Main control loop for spacecraft orbit
 
@@ -22,7 +22,7 @@ if mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_fuel_tank > 0
     end
 end
 
-if ~obj.desired_DeltaV_computed
+if ~obj.data.desired_DeltaV_computed
 
 
     % First, assess whether a maneuver calculation is actually needed
@@ -42,10 +42,10 @@ if ~obj.desired_DeltaV_computed
     func_compute_TCM_Lambert_Battin(obj, mission, i_SC);
 
     % Log the computed maneuver for mission awareness
-    if obj.desired_DeltaV_computed
-        disp(['Computed maneuver: DeltaV magnitude = ', num2str(norm(obj.desired_control_DeltaV)), ' m/s']);
-        disp(['Execution time: ', datestr(datetime('now') + seconds(obj.time_DeltaV - mission.true_time.time))]);
-        disp(['Estimated fuel required: ', num2str(obj.estimated_fuel_required), ' kg']);
+    if obj.data.desired_DeltaV_computed
+        disp(['Computed maneuver: DeltaV magnitude = ', num2str(norm(obj.data.desired_control_DeltaV)), ' m/s']);
+        disp(['Execution time: ', datestr(datetime('now') + seconds(obj.data.time_DeltaV - mission.true_time.time))]);
+        disp(['Estimated fuel required: ', num2str(obj.data.estimated_fuel_required), ' kg']);
     end
 
     first_pass = true;
@@ -54,22 +54,22 @@ end
 
 
 % Validate attitude and execute DeltaV if conditions are met
-if obj.desired_DeltaV_needs_to_be_executed && ...
-        (mission.true_time.time >= obj.time_DeltaV)  && ...
+if obj.data.desired_DeltaV_needs_to_be_executed && ...
+        (mission.true_time.time >= obj.data.time_DeltaV)  && ...
         ~first_pass && ...
         (norm(func_get_attitude_error(mission.true_SC{i_SC}.software_SC_control_attitude, mission, i_SC)) < 0.03) && ... % rad
-        ~obj.flag_insufficient_fuel
+        ~obj.data.flag_insufficient_fuel
     func_command_DeltaV(obj, mission, i_SC);
 end
 
 % Handle thruster warm-up logic if maneuver is planned
-if obj.desired_DeltaV_needs_to_be_executed && obj.desired_DeltaV_computed
+if obj.data.desired_DeltaV_needs_to_be_executed && obj.data.desired_DeltaV_computed
     % Check if remaining DeltaV is above threshold
-    remaining_DeltaV = obj.desired_control_DeltaV - obj.total_DeltaV_executed;
-    if norm(remaining_DeltaV) < obj.threshold_minimum_deltaV
+    remaining_DeltaV = obj.data.desired_control_DeltaV - obj.data.total_DeltaV_executed;
+    if norm(remaining_DeltaV) < obj.data.threshold_minimum_deltaV
         % If DeltaV is below threshold, consider it complete
         disp(['Skipping maneuver - remaining DeltaV (', num2str(norm(remaining_DeltaV)), ...
-            ' m/s) below threshold (', num2str(obj.threshold_minimum_deltaV), ' m/s)']);
+            ' m/s) below threshold (', num2str(obj.data.threshold_minimum_deltaV), ' m/s)']);
 
         % Stop warming up thruster if needed
         for i_thruster = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster
@@ -91,16 +91,16 @@ if obj.desired_DeltaV_needs_to_be_executed && obj.desired_DeltaV_computed
         end
 
         % Add safety margin
-        fuel_with_margin = obj.estimated_fuel_required * 1.1; % 10% margin
+        fuel_with_margin = obj.data.estimated_fuel_required * 1.1; % 10% margin
 
         if total_fuel < fuel_with_margin
             warning('Insufficient fuel for DeltaV execution. Required: %.3f kg (with margin), Available: %.3f kg', ...
                 fuel_with_margin, total_fuel);
 
             % Cancel the maneuver
-            obj.flag_insufficient_fuel = true;
-            obj.desired_DeltaV_needs_to_be_executed = false;
-            obj.desired_DeltaV_computed = false;
+            obj.data.flag_insufficient_fuel = true;
+            obj.data.desired_DeltaV_needs_to_be_executed = false;
+            obj.data.desired_DeltaV_computed = false;
 
             % Stop warming up thruster
             for i_thruster = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster
@@ -113,7 +113,7 @@ if obj.desired_DeltaV_needs_to_be_executed && obj.desired_DeltaV_computed
     end
 
     % Get time until DeltaV execution
-    time_to_DeltaV = obj.time_DeltaV - mission.true_time.time;
+    time_to_DeltaV = obj.data.time_DeltaV - mission.true_time.time;
 
     % Get thruster warm-up time
     thruster_warm_up_time = 30; % Default value
@@ -146,19 +146,19 @@ if obj.desired_DeltaV_needs_to_be_executed && obj.desired_DeltaV_computed
 end
 
 % Check if maneuver is complete - simplified approach
-if obj.desired_DeltaV_needs_to_be_executed && obj.desired_DeltaV_computed
+if obj.data.desired_DeltaV_needs_to_be_executed && obj.data.desired_DeltaV_computed
     % Check remaining DeltaV - this is updated directly by the thruster
-    remaining_DeltaV = obj.desired_control_DeltaV - obj.total_DeltaV_executed;
+    remaining_DeltaV = obj.data.desired_control_DeltaV - obj.data.total_DeltaV_executed;
 
     % Check timeout conditions
     maneuver_timeout = false;
-    time_since_planned = mission.true_time.time - obj.time_DeltaV;
+    time_since_planned = mission.true_time.time - obj.data.time_DeltaV;
 
     % Timeout if running too long since start
-    if obj.maneuver_start_time > 0 && (mission.true_time.time - obj.maneuver_start_time) > 120
+    if obj.data.maneuver_start_time > 0 && (mission.true_time.time - obj.data.maneuver_start_time) > 120
         maneuver_timeout = true;
         warning('Maneuver timeout reached after %d seconds from maneuver start', ...
-            mission.true_time.time - obj.maneuver_start_time);
+            mission.true_time.time - obj.data.maneuver_start_time);
     end
 
     % Timeout if waiting too long after planned execution
@@ -168,14 +168,14 @@ if obj.desired_DeltaV_needs_to_be_executed && obj.desired_DeltaV_computed
     end
 
     % Check if we should complete the maneuver
-    is_deltaV_complete = norm(remaining_DeltaV) < obj.threshold_minimum_deltaV;
+    is_deltaV_complete = norm(remaining_DeltaV) < obj.data.threshold_minimum_deltaV;
     if is_deltaV_complete || maneuver_timeout || time_since_planned > 60
         % Report reason for completion
         if is_deltaV_complete
             disp(['Maneuver completed: Target DeltaV achieved within ', ...
-                num2str(obj.threshold_minimum_deltaV), ' m/s threshold']);
+                num2str(obj.data.threshold_minimum_deltaV), ' m/s threshold']);
         elseif maneuver_timeout
-            disp(['Maneuver timeout after ', num2str(mission.true_time.time - obj.maneuver_start_time), ' seconds']);
+            disp(['Maneuver timeout after ', num2str(mission.true_time.time - obj.data.maneuver_start_time), ' seconds']);
         else
             disp(['Maneuver forced to complete after ', num2str(time_since_planned), ' seconds from planned time']);
         end

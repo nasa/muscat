@@ -76,6 +76,7 @@ if mission.storage.plot_parameters.flag_save_plots == 1
     saveas(plot_handle,[mission.storage.output_folder, mission.name,'_SC',num2str(i_SC),'_GroundTrack.png'])
 end
 
-
-ROI_UTC_Time = sec2cal(mission.true_time.store.date(find(ROI_idx,1))) 
-% Should be around 11am/11pm UTC time for 6am/6pm CDT local time
+if ~isempty(mission.true_time.store.date(find(ROI_idx,1)))
+    ROI_UTC_Time = sec2cal(mission.true_time.store.date(find(ROI_idx,1)))
+    % Should be around 11am/11pm UTC time for 6am/6pm CDT local time
+end

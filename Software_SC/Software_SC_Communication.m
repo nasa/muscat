@@ -10,6 +10,11 @@ classdef Software_SC_Communication  < handle
 
         instantaneous_data_generated_per_sample % [kb] : Data generated per sample, in kilo bits (kb)
 
+        instantaneous_data_type = 1 % 0 = Data rate, 1 = Data per sample 
+                                    % used to avoid calling isprop() every time
+                                    % step to determine if using instantaneous_data_rate_generated or
+                                    % instantaneous_data_generated_per_sample, which is slow
+
         mode_software_SC_communication_selector % [string] Different communication modes
 
         attitude_error_threshold % [rad]
@@ -23,6 +28,8 @@ classdef Software_SC_Communication  < handle
         this_attitude_error % [rad] current attitude error
 
         data % Other useful data
+
+        mode_selector_name % [string] Alternative name of mode
 
         last_communication_time % [sec]
         wait_time_comm_dte  % [sec] time to wait for communicating info to earth
@@ -55,6 +62,12 @@ classdef Software_SC_Communication  < handle
                 obj.data = init_data.data;
             else
                 obj.data = [];
+            end
+
+            if isfield(init_data, 'mode_selector_name')
+                obj.mode_selector_name = init_data.mode_selector_name;
+            else
+                obj.mode_selector_name = mission.name;
             end
 
             % Initialize communication time tracker
@@ -109,17 +122,13 @@ classdef Software_SC_Communication  < handle
 
                 switch obj.mode_software_SC_communication_selector
 
-                    case 'DART'
-                        obj = func_update_software_SC_communication_Dart(obj, mission, i_SC);
+                    case 'mission specific'
+                        func_name = ['func_update_software_SC_communication_', obj.mode_selector_name];
+                        this_func_handle = str2func(func_name);
+                        obj = this_func_handle(obj, mission, i_SC);
 
-                    case 'Nightingale'
-                        obj = func_update_software_SC_communication_Nightingale(obj, mission, i_SC);
-
-                    case 'IBEAM'
-                        obj = func_update_software_SC_communication_IBEAM(obj, mission, i_SC);
-
-                    case 'NISAR'
-                        obj = func_update_software_SC_communication_NISAR(obj, mission, i_SC);
+                    case 'Multi-GS Generic'
+                        obj = func_update_software_SC_communication_MultiGS_Generic(obj, mission, i_SC);
 
                     otherwise
                         disp('Communication mode not defined!')

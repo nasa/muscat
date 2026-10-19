@@ -9,30 +9,40 @@ classdef Software_SC_Control_Attitude < handle
 
         instantaneous_data_generated_per_sample % [kb] : Data generated per sample, in kilo bits (kb)
 
-        mode_software_SC_control_attitude_selector % [string] Different attitude control modes
-        % - 'DART Oracle' : Directly change True_SC_ADC.attitude values for DART mission
-        % - 'Nightingale Oracle' : Directly change True_SC_ADC.attitude values for Nightingale mission
-        % - 'Oracle with Control' : Use True_SC_ADC values + Noise
+        instantaneous_data_type = 1 % 0 = Data rate, 1 = Data per sample 
+                                    % used to avoid calling isprop() every time
+                                    % step to determine if using instantaneous_data_rate_generated or
+                                    % instantaneous_data_generated_per_sample, which is slow
 
+        mode_software_SC_control_attitude_selector % [string] Different attitude control modes        
+        
         %% [ ] Properties: Variables Computed Internally
 
         name % [string] =  SC j for jth SC + SW Control Attitude
 
         flag_executive % [Boolean] Executive has told this sensor/actuator to do its job
-
-        desired_attitude % [quanternion] : Orientation of inertial frame I with respect to the body frame B
-
+        
+        desired_attitude % [quanternion] : Orientation of body frame B with respect to inertial frame I
+        
         error_angle_desired_attitude % [radians] : Angle error between desired_attitude and true attitude
-
-        desired_angular_velocity % [rad/sec] : Angular velocity of inertial frame I with respect to the body frame B
-
+        
+        desired_angular_velocity % [rad/sec] : Angular velocity of body frame B wrt inertial frame I expressed in body frame B
+        
+        desired_angular_accel % [rad/sec^2] : Angular acceleration of body frame B wrt inertial frame I expressed in body frame B
+        
         desired_control_torque % [Nm] : Desired control torque
+
+        max_slew_rate % [rad/sec] : Maximum angular slew rate
 
         flag_slew % [Boolean] Slew is on?
 
         desired_slew_angle_change % [deg] Angle between current attitude and desired attitude
 
         data % Other useful data
+
+        mode_selector_name % [string] Alternative name of mode
+
+        flag_mission_specific_storage_variables_exists % [Boolean] Do additional mission-specific storage variables exisit? 
 
         desaturation_procedure % [Bool] - Is the procedure started ?
         thruster_contribution_matix        % thruster contribution
@@ -67,6 +77,11 @@ classdef Software_SC_Control_Attitude < handle
             obj.instantaneous_data_generated_per_sample = 0; % [kb]
             obj.mode_software_SC_control_attitude_selector = init_data.mode_software_SC_control_attitude_selector; % [string]
 
+            if isfield(init_data, 'max_slew_rate')
+                obj.max_slew_rate = init_data.max_slew_rate; % [rad/sec]
+            else
+                obj.max_slew_rate = 0; % [rad/sec]
+            end
 
             if isfield(init_data, 'data')
                 obj.data = init_data.data;
@@ -74,6 +89,13 @@ classdef Software_SC_Control_Attitude < handle
                 obj.data = [];
             end
 
+            if isfield(init_data, 'mode_selector_name')
+                obj.mode_selector_name = init_data.mode_selector_name;
+            else
+                obj.mode_selector_name = mission.name;
+            end
+
+            
             % Update SC Data Handling Class
             func_initialize_list_HW_data_generated(mission.true_SC{i_SC}.true_SC_data_handling, obj, mission);
 
@@ -81,8 +103,8 @@ classdef Software_SC_Control_Attitude < handle
             func_initialize_optimization_data(obj, mission, i_SC);
 
             % Initialize matrices and hardware data
-            if mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_micro_thruster > 0
-                obj = func_initialize_micro_thruster_contribution(obj, mission, i_SC);
+            if mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_RCS_thruster > 0
+                obj = func_initialize_RCS_thruster_contribution(obj, mission, i_SC);
             end
 
             if mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_reaction_wheel > 0
@@ -95,21 +117,23 @@ classdef Software_SC_Control_Attitude < handle
 
             % All the zeros
             obj.desaturation_procedure = 0;
-            obj.desired_attitude = zeros(1,4); % [quaternion]
+            obj.desired_attitude = [0, 0, 0, 1]; % [quaternion]
             obj.error_angle_desired_attitude = 0; % [rad]
             obj.desired_slew_angle_change = 0; % [deg]
-            obj.desired_control_torque = zeros(1,3); % [Toraue Vector Nm]
+            obj.desired_control_torque = zeros(1,3); % [Torque Vector Nm]
             obj.desired_angular_velocity = zeros(1,3); % [rad/sec]
-            obj.data.integral_error = zeros(3,1); % Initialize as 3x1 vector for X/Y/Z axes
+            obj.desired_angular_accel = zeros(1,3); % [rad/sec^2]
+            obj.data.integral_error = zeros(3,1); % Initialize as 3x1 vector for X/Y/Z axes            
 
             % Initialize control gains
             if isfield(init_data, 'control_gain')
                 obj.data.control_gain = init_data.control_gain;
             else
-                obj.data.control_gain = [0.1 1];   % [Kr ; Lambda_r] for RWA/MT control
+                obj.data.control_gain = [0.1, 1];   % [Kr ; Lambda_r] for RWA/MT control
             end
             obj.data.prev_desired_attitude = zeros(1,4); % [quaternion]
             obj.data.num_prev_desired_attitude = 60;
+                        
 
             % Initialize Variables to store
             obj.store = [];
@@ -119,9 +143,43 @@ classdef Software_SC_Control_Attitude < handle
             obj.store.desaturation_procedure = zeros(mission.storage.num_storage_steps_attitude, length(obj.desaturation_procedure));
             obj.store.desired_attitude = zeros(mission.storage.num_storage_steps_attitude, length(obj.desired_attitude));
             obj.store.desired_angular_velocity = zeros(mission.storage.num_storage_steps_attitude, length(obj.desired_angular_velocity));
+            obj.store.desired_angular_accel = zeros(mission.storage.num_storage_steps_attitude, length(obj.desired_angular_accel));
             obj.store.desired_control_torque = zeros(mission.storage.num_storage_steps_attitude, length(obj.desired_control_torque));
             obj.store.error_angle_desired_attitude = zeros(mission.storage.num_storage_steps_attitude, length(obj.error_angle_desired_attitude));
-            obj.store.desired_slew_angle_change = zeros(mission.storage.num_storage_steps_attitude, length(obj.desired_slew_angle_change));
+            obj.store.desired_slew_angle_change = zeros(mission.storage.num_storage_steps_attitude, length(obj.desired_slew_angle_change));            
+
+
+            % Additional Mission-Specific Control Attitude Variables
+            switch obj.mode_software_SC_control_attitude_selector
+
+                case 'mission specific'
+                    func_name = ['func_sw_SC_ctrl_attitude_constructor_', obj.mode_selector_name];
+
+                    if exist(func_name, 'file') == 2 || exist(func_name, 'builtin') == 5
+                            disp('Additional Mission-Specific Control Attitude constructor function exists!');
+                            this_func_handle = str2func(func_name);
+                            obj = this_func_handle(obj, init_data, mission, i_SC);
+
+                        else
+                            disp('Additional Mission-Specific Control Attitude constructor function does NOT exist.');
+                            % Do nothing! 
+                    end                                                                  
+
+                otherwise
+                    disp('Additional Control Attitude constructor mode not defined!')
+            end
+
+            % Additional Mission-Specific Storage Variables
+            func_name = ['func_update_sw_SC_control_attitude_store_', obj.mode_selector_name];
+
+            if exist(func_name, 'file') == 2 || exist(func_name, 'builtin') == 5
+                disp('Additional Mission-Specific Control Attitude storage function exists!');
+                obj.flag_mission_specific_storage_variables_exists = true;                
+            else
+                disp('Additional Mission-Specific Control Attitude storage function does NOT exist.');
+                obj.flag_mission_specific_storage_variables_exists = false;
+            end            
+
 
             % Update Storage
             obj = func_update_software_SC_control_attitude_store(obj, mission);
@@ -148,10 +206,19 @@ classdef Software_SC_Control_Attitude < handle
 
                 obj.store.desired_attitude(mission.storage.k_storage_attitude,:) = obj.desired_attitude; % [quaternion]
                 obj.store.desired_angular_velocity(mission.storage.k_storage_attitude,:) = obj.desired_angular_velocity; % [rad/sec]
+                obj.store.desired_angular_accel(mission.storage.k_storage_attitude,:) = obj.desired_angular_accel; % [rad/sec^2]
                 obj.store.desired_control_torque(mission.storage.k_storage_attitude,:) = obj.desired_control_torque; % [Nm]
 
                 obj.store.error_angle_desired_attitude(mission.storage.k_storage_attitude,:) = obj.error_angle_desired_attitude; % [rad]
                 obj.store.desired_slew_angle_change(mission.storage.k_storage_attitude,:) = obj.desired_slew_angle_change; % [deg]
+                                
+                % Additional Mission-Specific Storage Variables
+                if obj.flag_mission_specific_storage_variables_exists
+                    func_name = ['func_update_sw_SC_control_attitude_store_', obj.mode_selector_name];
+                    this_func_handle = str2func(func_name);
+                    obj = this_func_handle(obj, mission);
+                end
+                
             end
         end
 
@@ -163,21 +230,13 @@ classdef Software_SC_Control_Attitude < handle
 
             if (obj.flag_executive == 1)
 
-
                 switch obj.mode_software_SC_control_attitude_selector
 
-                    case {'DART Oracle', 'DART Control Asymptotically Stable send to ADC directly', 'DART Control PD', 'DART Control Asymptotically Stable send to actuators', 'DART Control Asymptotically Stable send to thrusters'}
-                        obj = func_update_software_SC_control_attitude_DART(obj, mission, i_SC);
-                    
-                    case {'IBEAM Oracle', 'IBEAM Control Asymptotically Stable send to ADC directly', 'IBEAM Control PD', 'IBEAM Control Asymptotically Stable send to actuators', 'IBEAM Control Asymptotically Stable send to thrusters'}
-                        obj = func_update_software_SC_control_attitude_IBEAM(obj, mission, i_SC);
-
-                    case {'Nightingale Oracle', 'Nightingale Slew Oracle', 'Nightingale Control Asymptotically Stable send to ADC directly', 'Nightingale Control PD send to ADC directly', 'Nightingale Control PD send to thrusters', 'Nightingale Control PD send to actuators', 'Nightingale Control Asymptotically Stable send to actuators', 'Nightingale Control Asymptotically Stable send to rwa', 'Nightingale Control Asymptotically Stable send to thrusters'}
-                        obj = func_update_software_SC_control_attitude_Nightingale_v2(obj, mission, i_SC);
-
-                    case {'NISAR Oracle'}
-                        obj = func_update_software_SC_control_attitude_NISAR(obj, mission, i_SC);
-
+                    case 'mission specific'
+                        func_name = ['func_update_software_SC_control_attitude_', obj.mode_selector_name];
+                        this_func_handle = str2func(func_name);
+                        obj = this_func_handle(obj, mission, i_SC);
+                         
                     otherwise
                         error('Attitude Control mode not defined!')
                 end
@@ -187,7 +246,7 @@ classdef Software_SC_Control_Attitude < handle
             end
 
             % Compute Error Angle between desired_attitude and estimated attitude
-            obj.error_angle_desired_attitude = min([func_error_angle_between_quaternions(obj.desired_attitude, mission.true_SC{i_SC}.software_SC_estimate_attitude.attitude), ...
+            obj.error_angle_desired_attitude = min([func_error_angle_between_quaternions( obj.desired_attitude, mission.true_SC{i_SC}.software_SC_estimate_attitude.attitude), ...
                                                     func_error_angle_between_quaternions(-obj.desired_attitude, mission.true_SC{i_SC}.software_SC_estimate_attitude.attitude)]); % [rad]
 
             % Update Storage

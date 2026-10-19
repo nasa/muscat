@@ -16,7 +16,7 @@ function func_plot_IBEAM_orbit_visualization(mission)
     subplot(1,2,1)
     
     for i_SC = 1:1:mission.num_SC
-        plot3(mission.true_SC{i_SC}.true_SC_navigation.store.position_relative_target(1:kd,1), mission.true_SC{i_SC}.true_SC_navigation.store.position_relative_target(1:kd,2), mission.true_SC{i_SC}.true_SC_navigation.store.position_relative_target(1:kd,3), '-','LineWidth',2, 'Color',mission.storage.plot_parameters.color_array(i_SC), 'DisplayName',mission.true_SC{i_SC}.true_SC_body.name)
+        plot3(mission.true_SC{i_SC}.true_SC_orbit_propagation.store.position_relative_target(1:kd,1), mission.true_SC{i_SC}.true_SC_orbit_propagation.store.position_relative_target(1:kd,2), mission.true_SC{i_SC}.true_SC_orbit_propagation.store.position_relative_target(1:kd,3), '-','LineWidth',2, 'Color',mission.storage.plot_parameters.color_array(i_SC), 'DisplayName',mission.true_SC{i_SC}.true_SC_body.name)
     end
     hold on
     
@@ -70,7 +70,7 @@ function func_plot_IBEAM_orbit_visualization(mission)
             
             % Now convert the indices to points
             if ~isempty(firing_indices)
-                firing_points = mission.true_SC{i_SC}.true_SC_navigation.store.position_relative_target(firing_indices,:);
+                firing_points = mission.true_SC{i_SC}.true_SC_orbit_propagation.store.position_relative_target(firing_indices,:);
                 
                 % Plot firing points with small red dots - sparse representation
                 if size(firing_points, 1) > 50
@@ -99,9 +99,9 @@ function func_plot_IBEAM_orbit_visualization(mission)
                                 deltaV = deltaV / norm(deltaV) * 0.5;  % 0.5 unit length arrows
                                 
                                 % Draw small arrow showing direction
-                                quiver3(mission.true_SC{i_SC}.true_SC_navigation.store.position_relative_target(k,1), ...
-                                       mission.true_SC{i_SC}.true_SC_navigation.store.position_relative_target(k,2), ...
-                                       mission.true_SC{i_SC}.true_SC_navigation.store.position_relative_target(k,3), ...
+                                quiver3(mission.true_SC{i_SC}.true_SC_orbit_propagation.store.position_relative_target(k,1), ...
+                                       mission.true_SC{i_SC}.true_SC_orbit_propagation.store.position_relative_target(k,2), ...
+                                       mission.true_SC{i_SC}.true_SC_orbit_propagation.store.position_relative_target(k,3), ...
                                        deltaV(1), deltaV(2), deltaV(3), ...
                                        'r', 'LineWidth', 1.5, 'MaxHeadSize', 0.5, 'AutoScale', 'off', 'HandleVisibility', 'off');
                             end
@@ -112,7 +112,7 @@ function func_plot_IBEAM_orbit_visualization(mission)
         end
     end
     
-    i_target = mission.true_SC{i_SC}.true_SC_navigation.index_relative_target;
+    i_target = mission.true_SC{i_SC}.true_SC_orbit_propagation.index_relative_target;
     func_plot_target_shape(i_target, mission);
     
     grid on
@@ -135,7 +135,7 @@ function func_plot_IBEAM_orbit_visualization(mission)
     hold on
     
     for i_SC = 1:1:mission.num_SC
-        plot(mission.true_time.store.time(1:kd), vecnorm( mission.true_SC{i_SC}.true_SC_navigation.store.position_relative_target(1:kd,:), 2, 2),  '-','LineWidth',2,'Color',mission.storage.plot_parameters.color_array(i_SC), 'DisplayName', [mission.true_SC{i_SC}.true_SC_body.name,' (True)'])
+        plot(mission.true_time.store.time(1:kd), vecnorm( mission.true_SC{i_SC}.true_SC_orbit_propagation.store.position_relative_target(1:kd,:), 2, 2),  '-','LineWidth',2,'Color',mission.storage.plot_parameters.color_array(i_SC), 'DisplayName', [mission.true_SC{i_SC}.true_SC_body.name,' (True)'])
     
         if isfield(mission.true_SC{i_SC}, 'software_SC_estimate_orbit')
             plot(mission.true_time.store.time(1:kd), vecnorm( mission.true_SC{i_SC}.software_SC_estimate_orbit.store.position_relative_target(1:kd,:), 2, 2),  '--','LineWidth',2,'Color',mission.storage.plot_parameters.color_array(i_SC), 'DisplayName', [mission.true_SC{i_SC}.true_SC_body.name,' (Estimated)'])
@@ -161,7 +161,7 @@ function func_plot_IBEAM_orbit_visualization(mission)
     hold on
     
     for i_SC = 1:1:mission.num_SC
-        plot(mission.true_time.store.time(1:kd), vecnorm( mission.true_SC{i_SC}.true_SC_navigation.store.velocity_relative_target(1:kd,:), 2, 2),  '-','LineWidth',2,'Color',mission.storage.plot_parameters.color_array(i_SC), 'DisplayName', [mission.true_SC{i_SC}.true_SC_body.name,' (True)'])
+        plot(mission.true_time.store.time(1:kd), vecnorm( mission.true_SC{i_SC}.true_SC_orbit_propagation.store.velocity_relative_target(1:kd,:), 2, 2),  '-','LineWidth',2,'Color',mission.storage.plot_parameters.color_array(i_SC), 'DisplayName', [mission.true_SC{i_SC}.true_SC_body.name,' (True)'])
     
         if isfield(mission.true_SC{i_SC}, 'software_SC_estimate_orbit')
             plot(mission.true_time.store.time(1:kd), vecnorm( mission.true_SC{i_SC}.software_SC_estimate_orbit.store.velocity_relative_target(1:kd,:), 2, 2),  '--','LineWidth',2,'Color',mission.storage.plot_parameters.color_array(i_SC), 'DisplayName', [mission.true_SC{i_SC}.true_SC_body.name,' (Estimated)'])

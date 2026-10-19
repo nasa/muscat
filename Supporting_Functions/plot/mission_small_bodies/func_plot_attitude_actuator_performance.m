@@ -25,7 +25,7 @@ nb_row = 1; % One row for torques
 % Initialize plot position counters
 current_row = 2; % Start from second row since first row is always torques
 
-has_thrusters = (mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_micro_thruster) > 1;
+has_thrusters = (mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_RCS_thruster) > 1;
 has_reaction_wheels = (mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_reaction_wheel) > 1;
 
 if has_thrusters
@@ -42,6 +42,8 @@ end
 nb_col = 3;
 
 %% Plot Setup
+axIdx = 0;
+ax = nan(nb_row*nb_col,1);
 plot_handle = figure('Name',['SC ',num2str(i_SC),' Attitude Actuator Performance']);
 clf;
 set(plot_handle, 'Color', [1, 1, 1]);
@@ -52,7 +54,8 @@ colors = {'r', 'g', 'b', 'c', 'm', 'y', 'k', [0.5, 0.5, 0.5]}; % Adding more col
 
 % First row : Desired, Actual, disturbance torques
 %% Desired Control Torque
-subplot(nb_row, nb_col, 1);
+axIdx = axIdx + 1;
+ax(axIdx) = subplot(nb_row, nb_col, 1);
 hold on;
 if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isfield(mission.true_SC{i_SC}, 'software_SC_control_attitude')
     % Get the number of data points available for the desired control torque
@@ -76,13 +79,14 @@ set(gca, 'FontSize', mission.storage.plot_parameters.standard_font_size, 'FontNa
 hold off;
 
 %% Disturbance Torque with Individual Contributions (Component-wise)
-subplot(nb_row, nb_col, 2);
+axIdx = axIdx + 1;
+ax(axIdx) = subplot(nb_row, nb_col, 2);
 hold on;
 
 % Check for different disturbance sources and if they're enabled
 has_SRP = isfield(mission.true_SC{i_SC}, 'true_SC_SRP') && ...
     mission.true_SC{i_SC}.true_SC_SRP.enable_SRP == 1 && ...
-    isfield(mission.true_SC{i_SC}.true_SC_SRP.store, 'disturbance_torque_SRP');
+    isfield(mission.true_SC{i_SC}.true_SC_SRP.store, 'disturbance_torque_SRP_body');
 
 has_G2 = isfield(mission.true_SC{i_SC}, 'true_SC_gravity_gradient') && ...
     mission.true_SC{i_SC}.true_SC_gravity_gradient.enable_G2 == 1 && ...
@@ -106,13 +110,13 @@ if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isfield(mission.true_SC{i_SC
         % 1. SRP components
         if has_SRP
             % Get the number of data points available for SRP torque
-            srp_data_length = min(dist_data_length, size(mission.true_SC{i_SC}.true_SC_SRP.store.disturbance_torque_SRP, 1));
+            srp_data_length = min(dist_data_length, size(mission.true_SC{i_SC}.true_SC_SRP.store.disturbance_torque_SRP_body, 1));
 
             if srp_data_length > 0
                 % Plot each component of SRP disturbance torque
                 for axis = 1:3
                     plot(mission.true_time.store.time(1:srp_data_length), ...
-                        mission.true_SC{i_SC}.true_SC_SRP.store.disturbance_torque_SRP(1:srp_data_length, axis), ...
+                        mission.true_SC{i_SC}.true_SC_SRP.store.disturbance_torque_SRP_body(1:srp_data_length, axis), ...
                         line_styles{1}, 'LineWidth', 1.5, 'Color', colors{axis}, ...
                         'DisplayName', ['SRP-' axis_names{axis}]);
                 end
@@ -211,7 +215,7 @@ if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isfield(mission.true_SC{i_SC
         end
 
         % Set y-axis to logarithmic scale to better visualize different orders of magnitude
-        set(gca, 'YScale', 'log');
+        % set(gca, 'YScale', 'log');
 
         % Add grid to the logarithmic plot (more helpful)
         grid on;
@@ -221,7 +225,7 @@ if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isfield(mission.true_SC{i_SC
 
         % Collect all data for determining y-axis limits
         if has_SRP && exist('srp_data_length', 'var') && srp_data_length > 0
-            all_data = [all_data; abs(reshape(mission.true_SC{i_SC}.true_SC_SRP.store.disturbance_torque_SRP(1:srp_data_length,:), [], 1))];
+            all_data = [all_data; abs(reshape(mission.true_SC{i_SC}.true_SC_SRP.store.disturbance_torque_SRP_body(1:srp_data_length,:), [], 1))];
         end
 
         if has_G2 && exist('g2_data_length', 'var') && g2_data_length > 0
@@ -298,7 +302,8 @@ if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isfield(mission.true_SC{i_SC
     hold off;
 
     %% True Torque
-    subplot(nb_row, nb_col, 3);
+    axIdx = axIdx + 1;
+    ax(axIdx) = subplot(nb_row, nb_col, 3);
     hold on;
 
     % Check if the total_torque field exists
@@ -362,11 +367,12 @@ if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isfield(mission.true_SC{i_SC
 
     if has_thrusters
         %% Micro Thruster Torque
-        subplot(nb_row, nb_col, (thruster_row-1)*nb_col + 1);
+        axIdx = axIdx + 1;
+        ax(axIdx) = subplot(nb_row, nb_col, (thruster_row-1)*nb_col + 1);
         hold on;
 
         % Get the number of thrusters
-        num_thrusters = mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_micro_thruster;
+        num_thrusters = mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_RCS_thruster;
 
         if num_thrusters > 0
             % Initialize total torque array
@@ -375,8 +381,8 @@ if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isfield(mission.true_SC{i_SC
             % Determine the minimum data length available
             min_thruster_data_length = kd;
             for i_HW = 1:num_thrusters
-                if isfield(mission.true_SC{i_SC}.true_SC_micro_thruster{i_HW}.store, 'control_torque_MT')
-                    thruster_data_length = size(mission.true_SC{i_SC}.true_SC_micro_thruster{i_HW}.store.control_torque_MT, 1);
+                if isfield(mission.true_SC{i_SC}.true_SC_RCS_thruster{i_HW}.store, 'control_torque_MT')
+                    thruster_data_length = size(mission.true_SC{i_SC}.true_SC_RCS_thruster{i_HW}.store.control_torque_MT, 1);
                     min_thruster_data_length = min(min_thruster_data_length, thruster_data_length);
                 end
             end
@@ -387,9 +393,9 @@ if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isfield(mission.true_SC{i_SC
 
                 % Sum torques from all thrusters
                 for i_HW = 1:num_thrusters
-                    if isfield(mission.true_SC{i_SC}.true_SC_micro_thruster{i_HW}.store, 'control_torque_MT') && ...
-                            size(mission.true_SC{i_SC}.true_SC_micro_thruster{i_HW}.store.control_torque_MT, 1) >= min_thruster_data_length
-                        total_torque = total_torque + mission.true_SC{i_SC}.true_SC_micro_thruster{i_HW}.store.control_torque_MT(1:min_thruster_data_length, :);
+                    if isfield(mission.true_SC{i_SC}.true_SC_RCS_thruster{i_HW}.store, 'control_torque_MT') && ...
+                            size(mission.true_SC{i_SC}.true_SC_RCS_thruster{i_HW}.store.control_torque_MT, 1) >= min_thruster_data_length
+                        total_torque = total_torque + mission.true_SC{i_SC}.true_SC_RCS_thruster{i_HW}.store.control_torque_MT(1:min_thruster_data_length, :);
                     end
                 end
 
@@ -412,26 +418,27 @@ if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isfield(mission.true_SC{i_SC
         hold off;
 
         %% Thrust Magnitude Plus Limits
-        subplot(nb_row, nb_col, (thruster_row-1)*nb_col + 2);
+        axIdx = axIdx + 1;
+        ax(axIdx) = subplot(nb_row, nb_col, (thruster_row-1)*nb_col + 2);
         hold on;
 
         % Find the maximum thrust across all thrusters for global max line
         global_max_thrust = 0;
 
         for i_HW = 1:num_thrusters
-            if isfield(mission.true_SC{i_SC}.true_SC_micro_thruster{i_HW}.store, 'true_commanded_thrust')
-                thrust_data_length = size(mission.true_SC{i_SC}.true_SC_micro_thruster{i_HW}.store.true_commanded_thrust, 1);
+            if isfield(mission.true_SC{i_SC}.true_SC_RCS_thruster{i_HW}.store, 'true_commanded_thrust')
+                thrust_data_length = size(mission.true_SC{i_SC}.true_SC_RCS_thruster{i_HW}.store.true_commanded_thrust, 1);
 
                 if thrust_data_length > 0
                     thrust_data_length = min(thrust_data_length, kd);
-                    thrust_actual = mission.true_SC{i_SC}.true_SC_micro_thruster{i_HW}.store.true_commanded_thrust(1:thrust_data_length);
+                    thrust_actual = mission.true_SC{i_SC}.true_SC_RCS_thruster{i_HW}.store.true_commanded_thrust(1:thrust_data_length);
 
                     plot(mission.true_time.store.time_attitude(1:thrust_data_length), ...
                         thrust_actual, '-', 'LineWidth', 1.5, ...
-                        'DisplayName', [mission.true_SC{i_SC}.true_SC_micro_thruster{i_HW}.name]);
+                        'DisplayName', [mission.true_SC{i_SC}.true_SC_RCS_thruster{i_HW}.name]);
 
-                    max_thrust = mission.true_SC{i_SC}.true_SC_micro_thruster{i_HW}.maximum_thrust;
-                    min_thrust = mission.true_SC{i_SC}.true_SC_micro_thruster{i_HW}.minimum_thrust;
+                    max_thrust = mission.true_SC{i_SC}.true_SC_RCS_thruster{i_HW}.maximum_thrust;
+                    min_thrust = mission.true_SC{i_SC}.true_SC_RCS_thruster{i_HW}.minimum_thrust;
 
                     % Update global max thrust if this one is larger
                     global_max_thrust = max(global_max_thrust, max_thrust);
@@ -462,11 +469,12 @@ if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isfield(mission.true_SC{i_SC
         hold off;
 
         %% Thruster Firing Status
-        subplot(nb_row, nb_col, (thruster_row-1)*nb_col + 3);
+        axIdx = axIdx + 1;
+        ax(axIdx) = subplot(nb_row, nb_col, (thruster_row-1)*nb_col + 3);
         hold on;
 
         % Get number of thrusters
-        num_thrusters = mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_micro_thruster;
+        num_thrusters = mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_RCS_thruster;
 
         % Plot horizontal lines for each thruster WITHOUT adding them to legend
         for i = 1:num_thrusters
@@ -479,11 +487,11 @@ if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isfield(mission.true_SC{i_SC
 
         % Plot firing status dots
         for i_HW = 1:num_thrusters
-            if isfield(mission.true_SC{i_SC}.true_SC_micro_thruster{i_HW}.store, 'true_commanded_thrust')
-                thruster_data_length = min(size(mission.true_SC{i_SC}.true_SC_micro_thruster{i_HW}.store.true_commanded_thrust, 1), kd);
+            if isfield(mission.true_SC{i_SC}.true_SC_RCS_thruster{i_HW}.store, 'true_commanded_thrust')
+                thruster_data_length = min(size(mission.true_SC{i_SC}.true_SC_RCS_thruster{i_HW}.store.true_commanded_thrust, 1), kd);
 
                 if thruster_data_length > 0
-                    thrust = mission.true_SC{i_SC}.true_SC_micro_thruster{i_HW}.store.true_commanded_thrust(1:thruster_data_length);
+                    thrust = mission.true_SC{i_SC}.true_SC_RCS_thruster{i_HW}.store.true_commanded_thrust(1:thruster_data_length);
 
                     % Find times when thruster is firing (using norm > 0)
                     firing_indices = find(abs(thrust) > 1e-10); % Small threshold to account for numerical precision
@@ -514,7 +522,8 @@ if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isfield(mission.true_SC{i_SC
 
     if has_reaction_wheels
         %% Reaction Wheel Torque (Summed per Axis)
-        subplot(nb_row, nb_col, (rw_row-1)*nb_col + 1);
+        axIdx = axIdx + 1;
+        ax(axIdx) = subplot(nb_row, nb_col, (rw_row-1)*nb_col + 1);
         hold on;
 
         % Get number of reaction wheels
@@ -563,7 +572,8 @@ if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isfield(mission.true_SC{i_SC
         hold off;
 
         %% Commanded Angular Acceleration
-        subplot(nb_row, nb_col, (rw_row-1)*nb_col + 2);
+        axIdx = axIdx + 1;
+        ax(axIdx) = subplot(nb_row, nb_col, (rw_row-1)*nb_col + 2);
         hold on;
 
         for i = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_reaction_wheel
@@ -591,7 +601,8 @@ if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isfield(mission.true_SC{i_SC
         hold off;
 
         %% Angular Velocity with Max Limits
-        subplot(nb_row, nb_col, (rw_row-1)*nb_col + 3);
+        axIdx = axIdx + 1;
+        ax(axIdx) = subplot(nb_row, nb_col, (rw_row-1)*nb_col + 3);
         hold on;
 
         for i = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_reaction_wheel
@@ -603,7 +614,7 @@ if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isfield(mission.true_SC{i_SC
 
                     % Angular Velocity
                     plot(mission.true_time.store.time_attitude(1:rw_vel_data_length), ...
-                        mission.true_SC{i_SC}.true_SC_reaction_wheel{i}.store.angular_velocity(1:rw_vel_data_length), ...
+                        mission.true_SC{i_SC}.true_SC_reaction_wheel{i}.store.angular_velocity(1:rw_vel_data_length)*30/pi, ...
                         '-', 'LineWidth', 1.5, 'Color', colors{i}, ...
                         'DisplayName', [mission.true_SC{i_SC}.true_SC_reaction_wheel{i}.name]);
 
@@ -616,31 +627,31 @@ if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isfield(mission.true_SC{i_SC
                         if i == 1
                             % Add max velocity line with legend entry
                             plot(mission.true_time.store.time_attitude(1:rw_vel_data_length), ...
-                                ones(1,rw_vel_data_length) * max_vel, ':', 'LineWidth', 1.5, 'Color', 'k', ...
+                                ones(1,rw_vel_data_length) * max_vel*30/pi, ':', 'LineWidth', 1.5, 'Color', 'k', ...
                                 'DisplayName', 'Max Velocity Limit');
 
                             % Add 80% saturation margin line
                             plot(mission.true_time.store.time_attitude(1:rw_vel_data_length), ...
-                                ones(1,rw_vel_data_length) * (0.8 * max_vel), '--', 'LineWidth', 1.5, 'Color', 'k', ...
+                                ones(1,rw_vel_data_length) * (0.8 * max_vel)*30/pi, '--', 'LineWidth', 1.5, 'Color', 'k', ...
                                 'DisplayName', '80% Saturation Margin');
 
                             % Add negative limit lines with legend entries
                             plot(mission.true_time.store.time_attitude(1:rw_vel_data_length), ...
-                                ones(1,rw_vel_data_length) * -max_vel, ':', 'LineWidth', 1.5, 'Color', 'k', ...
+                                ones(1,rw_vel_data_length) * -max_vel*30/pi, ':', 'LineWidth', 1.5, 'Color', 'k', ...
                                 'HandleVisibility', 'off');
                             plot(mission.true_time.store.time_attitude(1:rw_vel_data_length), ...
-                                ones(1,rw_vel_data_length) * (-0.8 * max_vel), '--', 'LineWidth', 1.5, 'Color', 'k', ...
+                                ones(1,rw_vel_data_length) * (-0.8 * max_vel)*30/pi, '--', 'LineWidth', 1.5, 'Color', 'k', ...
                                 'HandleVisibility', 'off');
                         else
                             % For other wheels, don't add to legend
                             plot(mission.true_time.store.time_attitude(1:rw_vel_data_length), ...
-                                ones(1,rw_vel_data_length) * max_vel, ':', 'LineWidth', 1, 'Color', colors{i}, 'HandleVisibility', 'off');
+                                ones(1,rw_vel_data_length) * max_vel*30/pi, ':', 'LineWidth', 1, 'Color', colors{i}, 'HandleVisibility', 'off');
                             plot(mission.true_time.store.time_attitude(1:rw_vel_data_length), ...
-                                ones(1,rw_vel_data_length) * -max_vel, ':', 'LineWidth', 1, 'Color', colors{i}, 'HandleVisibility', 'off');
+                                ones(1,rw_vel_data_length) * -max_vel*30/pi, ':', 'LineWidth', 1, 'Color', colors{i}, 'HandleVisibility', 'off');
                             plot(mission.true_time.store.time_attitude(1:rw_vel_data_length), ...
-                                ones(1,rw_vel_data_length) * (0.8 * max_vel), '--', 'LineWidth', 1, 'Color', colors{i}, 'HandleVisibility', 'off');
+                                ones(1,rw_vel_data_length) * (0.8 * max_vel)*30/pi, '--', 'LineWidth', 1, 'Color', colors{i}, 'HandleVisibility', 'off');
                             plot(mission.true_time.store.time_attitude(1:rw_vel_data_length), ...
-                                ones(1,rw_vel_data_length) * (-0.8 * max_vel), '--', 'LineWidth', 1, 'Color', colors{i}, 'HandleVisibility', 'off');
+                                ones(1,rw_vel_data_length) * (-0.8 * max_vel)*30/pi, '--', 'LineWidth', 1, 'Color', colors{i}, 'HandleVisibility', 'off');
                         end
                     end
                 end
@@ -649,7 +660,7 @@ if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isfield(mission.true_SC{i_SC
 
         grid on;
         xlabel('Time [sec]');
-        ylabel('Angular Velocity [rad/s]');
+        ylabel('Angular Velocity [RPM]');
         title('Reaction Wheel Angular Velocity with Saturation Limits');
         legend('Location', 'southeast');
         set(gca, 'FontSize', mission.storage.plot_parameters.standard_font_size, 'FontName', mission.storage.plot_parameters.standard_font_type);
@@ -657,6 +668,7 @@ if isfield(mission.true_SC{i_SC}, 'true_SC_adc') && isfield(mission.true_SC{i_SC
     end
 
     sgtitle(['SC ',num2str(i_SC),' Attitude Actuator Performance'],'fontsize',mission.storage.plot_parameters.title_font_size,'FontName',mission.storage.plot_parameters.standard_font_type)
+    linkaxes(ax(~isnan(ax)),'x');
 
     if mission.storage.plot_parameters.flag_save_plots == 1
         saveas(plot_handle,[mission.storage.output_folder, mission.name,'_SC',num2str(i_SC),'_Attitude_Actuator.png'])

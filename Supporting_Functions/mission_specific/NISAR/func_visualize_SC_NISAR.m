@@ -13,7 +13,7 @@ clf
 set(plot_handle, 'Name','Mission Dashboard')
 set(plot_handle,'Color',[1 1 1]);
 set(plot_handle,'units','normalized','outerposition',[0 0 1 1])
-set(plot_handle,'PaperPositionMode','auto');
+set(plot_handle,'PaperPositionMode','auto','Resize','off');
 
 % Add simulation time and attitude information to title if in real-time mode
 elapsed_time = seconds(mission.true_time.time);
@@ -47,12 +47,12 @@ hold on
 kd = mission.storage.k_storage;
 
 for i_SC = 1:1:mission.num_SC
-    plot3(mission.true_SC{i_SC}.true_SC_navigation.position_relative_target(1), mission.true_SC{i_SC}.true_SC_navigation.position_relative_target(2), mission.true_SC{i_SC}.true_SC_navigation.position_relative_target(3), 's','MarkerSize',15, 'MarkerFaceColor',rgb('Gray'), 'DisplayName',mission.true_SC{i_SC}.true_SC_body.name)
-    p_orbit = plot3(mission.true_SC{i_SC}.true_SC_navigation.store.position_relative_target(1:kd,1), mission.true_SC{i_SC}.true_SC_navigation.store.position_relative_target(1:kd,2), mission.true_SC{i_SC}.true_SC_navigation.store.position_relative_target(1:kd,3), '-','LineWidth',2, 'Color',mission.storage.plot_parameters.color_array(i_SC), 'DisplayName',mission.true_SC{i_SC}.true_SC_body.name);
+    plot3(mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target(1), mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target(2), mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target(3), 's','MarkerSize',15, 'MarkerFaceColor',rgb('Gray'), 'DisplayName',mission.true_SC{i_SC}.true_SC_body.name)
+    p_orbit = plot3(mission.true_SC{i_SC}.true_SC_orbit_propagation.store.position_relative_target(1:kd,1), mission.true_SC{i_SC}.true_SC_orbit_propagation.store.position_relative_target(1:kd,2), mission.true_SC{i_SC}.true_SC_orbit_propagation.store.position_relative_target(1:kd,3), '-','LineWidth',2, 'Color',mission.storage.plot_parameters.color_array(i_SC), 'DisplayName',mission.true_SC{i_SC}.true_SC_body.name);
     set(get(get(p_orbit,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
 end
 
-i_target = mission.true_SC{i_SC}.true_SC_navigation.index_relative_target;
+i_target = mission.true_SC{i_SC}.true_SC_orbit_propagation.index_relative_target;
 func_plot_target_shape(i_target, mission);
 
 % Plot Ground Stations
@@ -108,21 +108,16 @@ hold off
 drawnow limitrate
 
 if (obj.plot_parameters.flag_save_video == 1) && (mission.flag_stop_sim == 0) && is_realtime_update
+
+    % Open the video file for writing
     open(obj.plot_parameters.myVideo);
-    % writeVideo(obj.plot_parameters.myVideo, getframe(plot_handle));
 
     % Suppose you generate a frame:
     frame = getframe(plot_handle);  % or however you capture your frame
-
-    % Resize the frame to match required size
-    %     targetSize = [1412, 3840];  % [height, width]
-    targetSize = [3006, 6016];  % [height, width]
-    frameResized = imresize(frame.cdata, targetSize);
-
-    % Convert back to movie frame
-    frameToWrite = im2frame(frameResized);
-
-    writeVideo(obj.plot_parameters.myVideo, frameToWrite);
+    
+    % Write the frame to the video file
+    writeVideo(obj.plot_parameters.myVideo, frame);
+    
 end
 
 if obj.plot_parameters.flag_save_plots == 1 && ~is_realtime_update

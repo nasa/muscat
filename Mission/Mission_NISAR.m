@@ -26,7 +26,7 @@ mission.num_target = 1;        % Number of Target bodies
 mission.frame = 'Relative';    % Frame type: 'Absolute', 'Relative', or 'Combined'
 mission.flag_stop_sim = 0;     % Boolean flag to stop simulation if needed
 
-mission.this_phase = 'Texas heavy rain';
+mission.this_phase = 'Hurricane Helene';
 % 1: 'Hurricane Helene' 0 UTC, 24 September 2024 to 0 UTC, 1 October 2024 (Hurricane Helene)
 % 2: 'Texas heavy rain' 0 UTC, 3 July 2025 to 12 UTC, 5 July, 2025 (Texas heavy rain)
 
@@ -65,6 +65,11 @@ init_data.wait_time_realtime_plotting = 60*60; % [sec] Wait time between plots (
 init_data.flag_save_plots = 1; % [Boolean] 1: Save them (takes little time), 0: Doesnt save them (Optional)
 init_data.flag_save_video = 0; % [Boolean]1 1: Save them (takes a lot more time), 0: Doesnt save them (Optional)
 init_data.quiver_auto_scale_factor = 1;    % (Optional)
+init_data.mode_storage_viz_selector = 'mission specific'; % Use mission-specific viz code
+
+init_data.flag_write_report = 1; % [Boolean] : 1 = Enable report writing
+init_data.report_authors = 'Pedro Neves and Saptarshi Bandyopadhyay';
+
 mission.storage = Storage(init_data, mission);
 
 % Set font size for plots
@@ -520,9 +525,9 @@ Sun_SC_orbit_normal_angle = rad2deg(func_angle_between_vectors(Sun_pos', SC_orbi
 
 init_data.name_relative_target = 'Earth';
 
-init_data.mode_true_SC_navigation_dynamics_selector = 'Relative Dynamics';
+init_data.mode_true_SC_orbit_propagation_dynamics_selector = 'Relative Dynamics';
 
-mission.true_SC{i_SC}.true_SC_navigation = True_SC_Navigation(init_data, mission);
+mission.true_SC{i_SC}.true_SC_orbit_propagation = True_SC_Orbit_Propagation(init_data, mission);
 
 %% Initialize First Spacecraft's Attitude
 
@@ -639,8 +644,8 @@ end
 
 for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_solar_panel
     init_data = [];
-    init_data.instantaneous_power_consumed = 10; % [W]
-    init_data.instantaneous_data_rate_generated = 1.5e9; % [kbps]
+    init_data.instantaneous_power_consumed = 0; % [W]
+    init_data.instantaneous_data_rate_generated = (1e-3)*8; % [kbps]
     init_data.shape_model = [];
 
     panel_length = 5.5;        % Length along Y
@@ -700,8 +705,8 @@ for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_batter
     init_data.maximum_capacity = 11000; % [W hr] (known)
     init_data.charging_efficiency = 0.96; % [float <= 1]
     init_data.discharging_efficiency = 0.96; % [float <= 1]
-    init_data.instantaneous_power_consumed = 10; % [W]
-    init_data.instantaneous_data_rate_generated = 7.4e6; % [kbps] i.e. 1 Byte per sec
+    init_data.instantaneous_power_consumed = 0; % [W]
+    init_data.instantaneous_data_rate_generated = (1e-3)*8; % [kbps] i.e. 1 Byte per sec
 
     mission.true_SC{i_SC}.true_SC_battery{i_HW} = True_SC_Battery(init_data, mission, i_SC, i_HW);
 
@@ -756,7 +761,7 @@ for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_camera
     init_data.wait_time_visualize_SC_camera_coverage_during_sim = 10*60; % [sec]
     init_data.num_points = 5000; % [integer]
 
-    init_data.instantaneous_data_generated_per_pixel = (1e-3)* 8; % [kb]
+    init_data.instantaneous_data_generated_per_pixel = (1e-3)*8; % [kb]
 
     mission.true_SC{i_SC}.true_SC_camera{i_HW} = True_SC_Camera(init_data, mission, i_SC, i_HW);
 
@@ -813,7 +818,7 @@ for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_star_t
 
     init_data = [];
 
-    init_data.instantaneous_power_consumed = 1.5; %
+    init_data.instantaneous_power_consumed = 1.5; % [W]
     init_data.instantaneous_data_generated_per_sample = (4 + 1)*16e-3; % [kb] : 4 quaternion + 1 time vector, each of 16-bit depth
     init_data.mode_true_SC_star_tracker_selector = 'Simple with Sun outside FOV';
     init_data.measurement_wait_time = 0.1; % [sec]
@@ -1158,7 +1163,7 @@ mission.true_SC{i_SC}.true_SC_gravity_gradient = True_SC_Gravity_Gradient(init_d
 
 init_data = [];
 init_data.sc_modes = {'Science Mode', 'Maximize SP Power', 'Telecom'};
-init_data.mode_software_SC_executive_selector = 'NISAR';
+init_data.mode_software_SC_executive_selector = 'mission specific'; % 'NISAR';
 
 mission.true_SC{i_SC}.software_SC_executive = Software_SC_Executive(init_data, mission, i_SC);
 
@@ -1187,15 +1192,14 @@ mission.true_SC{i_SC}.software_SC_control_orbit = Software_SC_Control_Orbit(init
 %% Spacecraft Software: Attitude Control Configuration
 
 init_data = [];
-init_data.mode_software_SC_control_attitude_selector = 'NISAR Oracle';
-init_data.control_gain = [1 0.2];    % Controller gain parameters
+init_data.mode_software_SC_control_attitude_selector = 'mission specific'; % 'NISAR Oracle';
 
 mission.true_SC{i_SC}.software_SC_control_attitude = Software_SC_Control_Attitude(init_data, mission, i_SC);
 
 %% Spacecraft Software: Communication Configuration
 
 init_data = [];
-init_data.mode_software_SC_communication_selector = 'NISAR';
+init_data.mode_software_SC_communication_selector = 'mission specific'; % 'NISAR';
 init_data.instantaneous_data_generated_per_sample = (1e-3)*8*2;  % [kb] 2 Bytes per sample
 init_data.attitude_error_threshold_deg = 1;  % [deg] Max attitude error for communication
 

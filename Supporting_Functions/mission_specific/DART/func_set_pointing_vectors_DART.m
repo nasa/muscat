@@ -31,7 +31,7 @@ switch mission.true_SC{i_SC}.software_SC_executive.this_sc_mode
         obj.data.primary_vector = func_normalize_vec(mission.true_SC{i_SC}.true_SC_chemical_thruster{1}.orientation); % In body frame
 
         % Use the deltaV vector direction instead of target direction
-        deltaV = mission.true_SC{i_SC}.software_SC_control_orbit.desired_control_DeltaV;
+        deltaV = mission.true_SC{i_SC}.software_SC_control_orbit.data.desired_control_DeltaV;
         obj.data.desired_primary_vector = func_normalize_vec(deltaV)'; % In Inertial frame
 
         % Secondary vector remains optimized for solar panels

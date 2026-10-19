@@ -11,14 +11,14 @@ function func_plot_image(...
 %     if j ~= this_SC_index
 
 %         % plot radar line to SB
-%         pos_sb_this_sc_frame = true_small_body.position_SB - mission_true_SC{this_SC_index}.true_SC_navigation.position;
-%         pos_sc_this_sc_frame = (true_small_body.position_SB + mission_true_SC{j}.true_SC_navigation.position_relative_SB + scale_up_factor_factor*(1e-3)*mission_true_SC{j}.true_SC_adc.rotation_matrix_SC*mission_true_SC{j}.true_SC_camera_sensor.camera_data(i).location'  -  mission_true_SC{this_SC_index}.true_SC_navigation.position)';
+%         pos_sb_this_sc_frame = true_small_body.position_SB - mission_true_SC{this_SC_index}.true_SC_orbit_propagation.position;
+%         pos_sc_this_sc_frame = (true_small_body.position_SB + mission_true_SC{j}.true_SC_orbit_propagation.position_relative_SB + scale_up_factor_factor*(1e-3)*mission_true_SC{j}.true_SC_adc.rotation_matrix_SC*mission_true_SC{j}.true_SC_camera_sensor.camera_data(i).location'  -  mission_true_SC{this_SC_index}.true_SC_orbit_propagation.position)';
 %         plot3([pos_sb_this_sc_frame(1)', pos_sc_this_sc_frame(1)'] , [pos_sb_this_sc_frame(2)', pos_sc_this_sc_frame(2)'] , [pos_sb_this_sc_frame(3)', pos_sc_this_sc_frame(3)'], 'Color','green','Linewidth',2);
 %         % plot SC shape model
 %         this_SC_model = []; this_SC_model.Vertices = mission_true_SC{j}.true_SC_body.shape_model.Vertices; this_SC_model.Faces = mission_true_SC{j}.true_SC_body.shape_model.Faces;
 %         this_SC_model.Vertices = (mission_true_SC{j}.true_SC_adc.rotation_matrix_SC * this_SC_model.Vertices')';
 %         this_SC_model.Vertices = scale_up_factor_factor * this_SC_model.Vertices * (1e-3);
-%         this_SC_model.Vertices = this_SC_model.Vertices + (true_small_body.position_SB + mission_true_SC{j}.true_SC_navigation.position_relative_SB -  mission_true_SC{this_SC_index}.true_SC_navigation.position)';
+%         this_SC_model.Vertices = this_SC_model.Vertices + (true_small_body.position_SB + mission_true_SC{j}.true_SC_orbit_propagation.position_relative_SB -  mission_true_SC{this_SC_index}.true_SC_orbit_propagation.position)';
 %         patch(this_SC_model,'FaceColor',[1 1 1],'Facelighting','flat');
 %         %plot Solar panels shape model
 %         hold on;
@@ -26,12 +26,12 @@ function func_plot_image(...
 %             this_SP_model = []; this_SP_model.Vertices = mission_true_SC{j}.true_SC_solar_panel.solar_panel_data(sp).shape_model.Vertices; this_SP_model.Faces = mission_true_SC{j}.true_SC_solar_panel.solar_panel_data(sp).shape_model.Faces;
 %             this_SP_model.Vertices = (mission_true_SC{j}.true_SC_adc.rotation_matrix_SC *  this_SP_model.Vertices')';
 %             this_SP_model.Vertices = scale_up_factor_factor * this_SP_model.Vertices * (1e-3);
-%             this_SP_model.Vertices = this_SP_model.Vertices + (true_small_body.position_SB + mission_true_SC{j}.true_SC_navigation.position_relative_SB -  mission_true_SC{this_SC_index}.true_SC_navigation.position)';
+%             this_SP_model.Vertices = this_SP_model.Vertices + (true_small_body.position_SB + mission_true_SC{j}.true_SC_orbit_propagation.position_relative_SB -  mission_true_SC{this_SC_index}.true_SC_orbit_propagation.position)';
 %             patch(this_SP_model,'FaceColor','blue','Facelighting','flat'); % 'Facelighting','gouraud'
 %             hold on;
 %         end
 %         % plot SC local frame
-%         pos_sc_this_sc_frame = (true_small_body.position_SB + mission_true_SC{j}.true_SC_navigation.position_relative_SB -  mission_true_SC{this_SC_index}.true_SC_navigation.position)';
+%         pos_sc_this_sc_frame = (true_small_body.position_SB + mission_true_SC{j}.true_SC_orbit_propagation.position_relative_SB -  mission_true_SC{this_SC_index}.true_SC_orbit_propagation.position)';
 %         arrow_size=scale_up_factor_factor*0.8*1e-3;
 %         mArrow3(pos_sc_this_sc_frame',pos_sc_this_sc_frame'+mission_true_SC{j}.true_SC_adc.rotation_matrix_SC*[arrow_size 0 0]', 'facealpha', 1, 'color', 'r', 'stemWidth', 0.005);
 %         hold on;
@@ -46,7 +46,7 @@ function func_plot_image(...
 % this_SB_Shape_Model = true_small_body.shape_model;
 % Rotation_matrix = func_rotation_matrix(true_small_body.rotation_rate * true_time.time) * true_small_body.rotation_matrix_pole_RA_Dec;
 % this_SB_Shape_Model.Vertices = (Rotation_matrix * this_SB_Shape_Model.Vertices')'*(1e-3) * scale_up_factor_factor;
-% this_SB_Shape_Model.Vertices = this_SB_Shape_Model.Vertices + (true_small_body.position_SB - mission_true_SC{this_SC_index}.true_SC_navigation.position)';
+% this_SB_Shape_Model.Vertices = this_SB_Shape_Model.Vertices + (true_small_body.position_SB - mission_true_SC{this_SC_index}.true_SC_orbit_propagation.position)';
 % patch(this_SB_Shape_Model, 'FaceColor',0.7*[1 1 1], 'EdgeColor', 'none'); % 'Facelighting','gouraud'
 
 % axis vis3d off
@@ -117,7 +117,7 @@ end
 % Light comming from sun
 %         camlight('headlight')
 h = light;
-h.Position = (mission_true_solar_system.position_Sun - mission_true_SC{1}.true_SC_navigation.position)';
+h.Position = (mission_true_solar_system.position_Sun - mission_true_SC{1}.true_SC_orbit_propagation.position)';
 h.Style = 'local';
 
 % field of view

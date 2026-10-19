@@ -30,7 +30,7 @@ mission.flag_stop_sim = 0;     % Boolean flag to stop simulation if needed
 
 init_data = [];
 init_data.t_initial = 0;                                    % [sec] Initial time
-init_data.t_final = 2000;                                 % [sec] Final time 
+init_data.t_final = 2.5*24*60*60;                                 % [sec] Final time 
 init_data.time_step = 5;                                    % [sec] Simulation time step
 init_data.t_initial_date_string = '02-NOV-2018 00:00:00';   % Format = [DD-MMM-YYYY HH:MM:SS]
 init_data.time_step_attitude = 0.1;                         % [sec] Time step for attitude dynamics
@@ -45,6 +45,10 @@ init_data.flag_visualize_SC_attitude_orbit_during_sim = 0;  % [Boolean] Show att
 init_data.flag_realtime_plotting = 0;      % [Boolean] Show mission data and attitude during sim
 init_data.flag_save_plots = 1;             % [Boolean] 1: Save them (takes little time), 0: Doesnt save them
 init_data.flag_save_video = 0;             % [Boolean] 1: Save them (takes more time), 0: Doesnt save them
+
+init_data.flag_write_report = 0; % [Boolean] : 1 = Enable report writing
+init_data.report_authors = 'Thibault Wartel and Saptarshi Bandyopadhyay';
+
 mission.storage = Storage(init_data, mission);
 
 % Set font size for plots
@@ -162,7 +166,7 @@ init_data.num_hardware_exists.num_onboard_memory = 2;
 init_data.num_hardware_exists.num_sun_sensor = 6;
 init_data.num_hardware_exists.num_star_tracker = 3;
 init_data.num_hardware_exists.num_imu = 1;
-init_data.num_hardware_exists.num_micro_thruster = 12;
+init_data.num_hardware_exists.num_RCS_thruster = 12;
 init_data.num_hardware_exists.num_chemical_thruster = 1;
 init_data.num_hardware_exists.num_reaction_wheel = 3;
 init_data.num_hardware_exists.num_communication_link = 2;
@@ -193,13 +197,13 @@ cspice_furnsh(init_data.spice_filename)
 init_data.spice_name = '-110'; % [string] : SC's SPICE Name
 
 % Sun centered - J2000 frame (inertial)
-init_data.SC_pos_vel = cspice_spkezr(init_data.spice_name,mission.true_time.date,'J2000','NONE','SOLAR SYSTEM BARYCENTER');
+init_data.SC_pos_vel = cspice_spkezr(init_data.spice_name,mission.true_time.date,'J2000','NONE','SUN');
 init_data.position = init_data.SC_pos_vel(1:3)'; % [km]
 init_data.velocity = init_data.SC_pos_vel(4:6)'; % [km/sec]
 
-init_data.mode_true_SC_navigation_dynamics_selector = 'Absolute Dynamics';
+init_data.mode_true_SC_orbit_propagation_dynamics_selector = 'Absolute Dynamics';
 
-mission.true_SC{i_SC}.true_SC_navigation = True_SC_Navigation(init_data, mission);
+mission.true_SC{i_SC}.true_SC_orbit_propagation = True_SC_Orbit_Propagation(init_data, mission);
 
 
 %% Initialize First Spacecraft's Attitude
@@ -534,16 +538,16 @@ end
 
 %% Initialize First Spacecraft's Micro Thrusters
 
-for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_micro_thruster
+for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_RCS_thruster
 
     init_data = [];
 
     init_data.instantaneous_power_consumption = 10; % Watts
     init_data.instantaneous_data_generated_per_sample = (3)*16e-3; % [kb] : thrust + health + temperature, each of 16-bit depth
-    init_data.mode_true_SC_micro_thruster_selector = 'Simple'; % Mode (Truth/Simple)
+    init_data.mode_true_SC_RCS_thruster_selector = 'Simple'; % Mode (Truth/Simple)
     init_data.thruster_noise = 100*(1e-6); % Noise level [N](unit depends on implementation)
 
-    init_data.micro_thruster_ISP = 700; % [sec]
+    init_data.RCS_thruster_ISP = 700; % [sec]
 
     init_data.minimum_thrust = 0.001; % [N]
     init_data.maximum_thrust = 10*(1e-2); % [N]
@@ -603,7 +607,7 @@ for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_micro_
             error('Should not reach here!')
     end
 
-    mission.true_SC{i_SC}.true_SC_micro_thruster{i_HW} = True_SC_Micro_Thruster(init_data, mission, i_SC, i_HW);
+    mission.true_SC{i_SC}.true_SC_RCS_thruster{i_HW} = True_SC_RCS_Thruster(init_data, mission, i_SC, i_HW);
 
 end
 
@@ -617,6 +621,7 @@ for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_reacti
     init_data.location = [0,0,0];
     init_data.radius = (43e-3)/2; % [m] radius of 1 RW
     init_data.mass = 0.137; % [kg] mass of 1 RW
+    init_data.angular_velocity = 0; % [rad/s] 6500 RPM
     init_data.max_angular_velocity = 6500*2*pi/60; % [rad/s] 6500 RPM
     init_data.angular_velocity_noise = 0.001*2*pi/60;      % [rad/s] velocity noise (reduced from 0.01)
     init_data.instantaneous_data_generated_per_sample = (3)*16e-3; % [kb] : thrust + health + temperature, each of 16-bit depth
@@ -681,6 +686,8 @@ for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemic
 
     init_data.maximum_thrust = 1;                          % [N] Maximum thrust level
     init_data.minimum_thrust = 0.01;                       % [N] Minimum thrust level
+
+    init_data.desired_fuel_tank = 1;                       % Use first fuel tank
 
     % Create chemical thruster object
     mission.true_SC{i_SC}.true_SC_chemical_thruster{i_HW} = True_SC_Chemical_Thruster(init_data, mission, i_SC, i_HW);
@@ -762,7 +769,7 @@ mission.true_SC{i_SC}.true_SC_gravity_gradient = True_SC_Gravity_Gradient(init_d
 
 init_data = [];
 init_data.sc_modes = {'Point camera to Target', 'Maximize SP Power', 'Point Thruster along DeltaV direction', 'DTE Comm'};
-init_data.mode_software_SC_executive_selector = 'DART';
+init_data.mode_software_SC_executive_selector = 'mission specific'; % 'DART';
 
 mission.true_SC{i_SC}.software_SC_executive = Software_SC_Executive(init_data, mission, i_SC);
 
@@ -776,22 +783,24 @@ mission.true_SC{i_SC}.software_SC_estimate_attitude = Software_SC_Estimate_Attit
 %% Spacecraft Software: Orbit Estimation Configuration
 
 init_data = [];
-init_data.mode_software_SC_estimate_orbit_selector = 'TruthWithErrorGrowth';  % Use true orbit values with error growth when target not visible
+init_data.mode_software_SC_estimate_orbit_selector = 'Truth'; % 'TruthWithErrorGrowth';  % Use true orbit values with error growth when target not visible
 
 mission.true_SC{i_SC}.software_SC_estimate_orbit = Software_SC_Estimate_Orbit(init_data, mission, i_SC);
 
 %% Spacecraft Software: Orbit Control Configuration
 
 init_data = [];
-init_data.max_time_before_control = 0.5*60*60 + 900;  % 45 minutes 
-init_data.mode_software_SC_control_orbit_selector = 'DART';
+init_data.max_time_before_control = (0.5*60*60 + 900);  % 45 minutes (0.5*60*60 + 900)
+init_data.mode_software_SC_control_orbit_selector = 'mission specific'; % 'DART';
 
 mission.true_SC{i_SC}.software_SC_control_orbit = Software_SC_Control_Orbit(init_data, mission, i_SC);
 
 %% Spacecraft Software: Attitude Control Configuration
 
 init_data = [];
-init_data.mode_software_SC_control_attitude_selector = 'DART Control Asymptotically Stable send to actuators'; 
+init_data.data = [];
+init_data.mode_software_SC_control_attitude_selector = 'mission specific'; 
+init_data.data.submode_software_SC_control_attitude_selector = 'DART Control Asymptotically Stable send to actuators'; 
 init_data.control_gain = [1 0.2];    % Controller gain parameters
 
 mission.true_SC{i_SC}.software_SC_control_attitude = Software_SC_Control_Attitude(init_data, mission, i_SC);
@@ -799,7 +808,7 @@ mission.true_SC{i_SC}.software_SC_control_attitude = Software_SC_Control_Attitud
 %% Spacecraft Software: Communication Configuration
 
 init_data = [];
-init_data.mode_software_SC_communication_selector = 'DART';
+init_data.mode_software_SC_communication_selector = 'mission specific'; % 'DART';
 init_data.instantaneous_data_generated_per_sample = (1e-3)*8*2;  % [kb] 2 Bytes per sample
 init_data.attitude_error_threshold_deg = 1;  % [deg] Max attitude error for communication
 

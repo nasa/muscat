@@ -37,9 +37,9 @@ classdef True_Target_SPICE < handle
         mu % [km^3 sec^-2] Target's standard gravitational parameter μ = GM
         mass % [kg] Mass of Target
 
-        position % [km] Current position of Target wrt Solar System Barycenter centered J2000
-        velocity % [km/sec] Current velocity of Target wrt Solar System Barycenter centered J2000
-        position_array % [km] Position array of Target wrt Solar System Barycenter centered J2000, corresponding to time array in mission.true_time.time_position_array
+        position % [km] Current position of Target wrt SUN centered J2000
+        velocity % [km/sec] Current velocity of Target wrt SUN centered J2000
+        position_array % [km] Position array of Target wrt SUN centered J2000, corresponding to time array in mission.true_time.time_position_array
 
         %% [ ] Properties: Storage Variables
 
@@ -110,7 +110,7 @@ classdef True_Target_SPICE < handle
 
                     % SPICE
                     obj.spice_filename = [path_body_data 'Apophis/apophis.bsp'];
-                    obj.spice_name = '2099942';
+                    obj.spice_name = '2099942';                    
 
                     % Pole Data
                     obj.pole_RA = 250; % [deg]
@@ -148,9 +148,7 @@ classdef True_Target_SPICE < handle
                     obj.pole_Dec = 90*pi/180; % [deg]
                     obj.prime_meridian = 0; % [deg] (at t_init)
 
-                    obj.mass =  1.9e13;
-                    obj.ode_options =  odeset( 'RelTol',1e-14,'AbsTol',1e-14);
-
+                    obj.mass =  1.9e13;                    
 
                 case 'Itokawa'
                     % obj.name = 'Itokawa';
@@ -181,8 +179,7 @@ classdef True_Target_SPICE < handle
                     obj.prime_meridian = 0; % [deg] (at t_init)
 
                     obj.mass =  3.51e10;
-                    obj.ode_options =  odeset( 'RelTol',1e-14,'AbsTol',1e-14);
-
+                    
                 case '1996HW1'
                     % obj.name = '1996HW1';
 
@@ -214,8 +211,7 @@ classdef True_Target_SPICE < handle
                     obj.pole_Dec =-30*pi/180; % [rad]
                     obj.prime_meridian = 0; % [deg] (at t_init)
 
-                    obj.mass =  3.51e10; % I CANT FIND IT
-                    obj.ode_options =  odeset( 'RelTol',1e-14,'AbsTol',1e-14);
+                    obj.mass =  7.5e12; % [kg]
 
                 case 'Earth'
                     % obj.name = 'Earth';
@@ -238,7 +234,6 @@ classdef True_Target_SPICE < handle
 
                     % SPICE
                     obj.spice_name = '399';
-                    % obj.spice_filename = [path_body_data 'Earth/earth_200101_990825_predict.bpc'];
                     obj.spice_filename = '../../MuSCAT_Supporting_Files/SPICE/de442.bsp';
 
                     % Pole Data
@@ -286,8 +281,7 @@ classdef True_Target_SPICE < handle
                     obj.prime_meridian = 0; % [deg] (at t_init)
 
 
-                    obj.mass =  6.1e10;
-                    obj.ode_options =  odeset( 'RelTol',1e-14,'AbsTol',1e-14);
+                    obj.mass =  6.1e10;                    
 
                 case 'Enceladus'
                     % obj.name = 'Enceladus';
@@ -295,7 +289,7 @@ classdef True_Target_SPICE < handle
                     obj.rotation_period = 1.370218*86400; % [sec] https://en.wikipedia.org/wiki/Enceladus
 
                     % Gravity Model
-                    obj.gravity_filename = [path_body_data 'Bennu/bennu_harmonics_jpl5.txt'];
+                    obj.gravity_filename = [path_body_data 'Enceladus/enceladus_harmonics.txt']; % Data from https://atmos.nmsu.edu/data_and_services/atmospheres_data/Cassini/0-FINISHED%20PRODUCTS/21-CHARM_2014_enceladus_gravity.pdf
                     obj.gravity_field = GravityField(obj.gravity_filename); % Load gravity field
                     obj.gravity_degree_harmonics = 8;
 
@@ -305,7 +299,7 @@ classdef True_Target_SPICE < handle
                     obj.shape_model.img = [path_body_data 'Enceladus/Enceladus_surface_color.jpg'];
 
                     % SPICE
-                    obj.spice_filename = '../../MuSCAT_Supporting_Files/SC_data/Nightingale/insar_6stride_26d_v7_scpse.bsp';
+                    obj.spice_filename = '../../MuSCAT_Supporting_Files/SB_data/Enceladus/insar_6stride_26d_v7_scpse.bsp';
                     obj.spice_name = '602';
 
                     % Pole Data
@@ -320,6 +314,69 @@ classdef True_Target_SPICE < handle
 
                     obj.mass =  1.080318e20; % [kg]
                     obj.radius = 252; % [km]
+
+
+                case 'Uranus'
+                    % obj.name = 'Uranus';
+
+                    obj.rotation_period = (17*3600) + (14*60) + 52.310; % [sec] https://en.wikipedia.org/wiki/Enceladus
+
+                    % Gravity Model
+                    obj.gravity_filename = [path_body_data 'Uranus/uranus_harmonics_reza.txt'];
+                    obj.gravity_field = GravityField(obj.gravity_filename); % Load gravity field
+                    obj.gravity_degree_harmonics = 2;
+
+                    % Shape Model
+                    obj.shape_model = [];
+                    obj.shape_model_type = 'sphere';
+                    % obj.shape_model.img = [path_body_data 'Uranus/uranus.png'];
+                    obj.shape_model.img = [path_body_data 'Uranus/uranusmap-10x5k-CC.jpg'];
+
+                    % SPICE
+                    obj.spice_filename = '../../MuSCAT_Supporting_Files/SPICE/ura182.bsp';
+                    obj.spice_name = '799';
+
+                    % Pole Data
+                    obj.pole_RA = 257.311; % [deg]
+                    obj.pole_Dec = -15.175; % [deg]
+                    obj.prime_meridian = 203.81; % [deg] (at t_init)
+
+                    % Use SPICE TPC file instead
+                    cspice_furnsh('../../MuSCAT_Supporting_Files/SPICE/pck00011.tpc')
+
+                    obj.mass =  8.6810e25; % [kg]
+                    obj.radius = 25559; % [km]
+
+
+                case 'Moon'
+                    % obj.name = 'Moon';
+
+                    obj.rotation_period = 27.321661*86400; % [sec] Sidereal rotation period from https://en.wikipedia.org/wiki/Moon
+
+                    % Gravity Model (https://ode.rsl.wustl.edu/mars/pagehelp/Content/Missions_Instruments/Lunar_Prospector/DGE/Gravity.htm)
+                    obj.gravity_filename = [path_body_data 'Moon/glgm3_150.txt'];
+                    obj.gravity_field = GravityField(obj.gravity_filename); % Load gravity field
+                    obj.gravity_degree_harmonics = 4;
+
+                    % Shape Model
+                    obj.shape_model = [];
+                    obj.shape_model_type = 'sphere';
+                    obj.shape_model.img = [path_body_data 'Moon/lroc_color_poles_1k.jpg'];
+
+                    % SPICE
+                    obj.spice_filename = '../../MuSCAT_Supporting_Files/SPICE/de442.bsp';
+                    obj.spice_name = '301';
+
+                    % Pole Data
+                    obj.pole_RA = 266.86; % [deg]
+                    obj.pole_Dec = 65.64; % [deg]
+                    obj.prime_meridian = 0; % [deg] (at t_init)
+
+                    % Use SPICE TPC file instead
+                    cspice_furnsh('../../MuSCAT_Supporting_Files/SPICE/pck00011.tpc')
+
+                    obj.mass =  7.346e22; % [kg]
+                    obj.radius = 1738; % [km]
 
 
                 otherwise
@@ -387,11 +444,11 @@ classdef True_Target_SPICE < handle
         function obj = func_main_true_target(obj,mission)
 
             % Pos and Velocity from SPICE
-            target_pos_vel_this_time = cspice_spkezr(obj.spice_name,mission.true_time.date,'J2000','NONE','SOLAR SYSTEM BARYCENTER');
+            target_pos_vel_this_time = cspice_spkezr(obj.spice_name,mission.true_time.date,'J2000','NONE','SUN');
             obj.position = target_pos_vel_this_time(1:3)'; % [km]
             obj.velocity = target_pos_vel_this_time(4:6)'; % [km/sec]
 
-            target_pos_vel_array = (cspice_spkezr(obj.spice_name, mission.true_time.prev_date + mission.true_time.time_position_array' ,'J2000','NONE','SOLAR SYSTEM BARYCENTER'))';
+            target_pos_vel_array = (cspice_spkezr(obj.spice_name, mission.true_time.prev_date + mission.true_time.time_position_array' ,'J2000','NONE','SUN'))';
             obj.position_array = target_pos_vel_array(:,1:3);
 
             % Rotation Matrix
@@ -421,7 +478,13 @@ classdef True_Target_SPICE < handle
                     rot = cspice_pxform(fromFrame, toFrame, mission.true_time.date);
 
                 case 'Moon'
-                    fromFrame = 'IAU_MOON';      % Body-fixed frame of Earth
+                    fromFrame = 'IAU_MOON';      % Body-fixed frame of Moon
+                    toFrame = 'J2000';           % Inertial frame (e.g., J2000)
+
+                    rot = cspice_pxform(fromFrame, toFrame, mission.true_time.date);
+
+                case 'Uranus'
+                    fromFrame = 'IAU_URANUS';      % Body-fixed frame of Uranus
                     toFrame = 'J2000';           % Inertial frame (e.g., J2000)
 
                     rot = cspice_pxform(fromFrame, toFrame, mission.true_time.date);

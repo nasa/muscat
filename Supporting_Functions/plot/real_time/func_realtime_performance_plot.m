@@ -778,7 +778,7 @@ try
         cla(ax);
         
         % Show target-relative position
-        pos = mission.true_SC{i_SC}.true_SC_navigation.position_relative_target;
+        pos = mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target;
         dist = norm(pos);
         
         % Make a simple 2D representation

@@ -1,10 +1,10 @@
 %% [ ] Methods: NISAR Executive Constructor
 % Constructor for Main Executive Function for NISAR mission
 
-function obj = func_software_SC_executive_NISAR_constructor(obj, mission, i_SC)
+function obj = func_software_SC_executive_constructor_NISAR(obj, mission, i_SC)
 
-i_target = mission.true_SC{i_SC}.true_SC_navigation.index_relative_target;
-[radius, lon, lat] = cspice_reclat(mission.true_target{i_target}.rotation_matrix' * mission.true_SC{i_SC}.true_SC_navigation.position_relative_target'); % [radius, longitude [rad], latitude [rad] ]
+i_target = mission.true_SC{i_SC}.true_SC_orbit_propagation.index_relative_target;
+[radius, lon, lat] = cspice_reclat(mission.true_target{i_target}.rotation_matrix' * mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target'); % [radius, longitude [rad], latitude [rad] ]
 obj.data.longitude = rad2deg(lon); % [deg]
 obj.data.latitude = rad2deg(lat); % [deg]
 obj.data.altitude = radius - mission.true_target{i_target}.radius; % [km]
@@ -12,7 +12,7 @@ obj.data.altitude = radius - mission.true_target{i_target}.radius; % [km]
 
 Sun_pos = mission.true_solar_system.SS_body{mission.true_solar_system.index_Sun}.position; % [km]
 Earth_pos = mission.true_target{i_target}.position; % [km]
-SC_pos = mission.true_SC{i_SC}.true_SC_navigation.position; % [km]
+SC_pos = mission.true_SC{i_SC}.true_SC_orbit_propagation.position; % [km]
 Sun_Earth_SC_Angle = func_angle_between_vectors( func_normalize_vec(Sun_pos - Earth_pos)', func_normalize_vec(SC_pos - Earth_pos)' ); % [rad]
 obj.data.Sun_Earth_SC_Angle = rad2deg(Sun_Earth_SC_Angle); % [deg]
 

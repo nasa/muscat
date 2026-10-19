@@ -58,14 +58,14 @@ end
 
 %% Step 5: Assign computed thrust and torque to each microthruster
 % Assign the thrust individually and safely
-for i = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_micro_thruster
-    if x(i) >  mission.true_SC{i_SC}.true_SC_micro_thruster{i}.minimum_thrust
+for i = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_RCS_thruster
+    if x(i) >  mission.true_SC{i_SC}.true_SC_RCS_thruster{i}.minimum_thrust
 
-        mission.true_SC{i_SC}.true_SC_micro_thruster{i}.command_actuation = 1;
-        mission.true_SC{i_SC}.true_SC_micro_thruster{i}.commanded_thrust = x(i);
+        mission.true_SC{i_SC}.true_SC_RCS_thruster{i}.command_actuation = 1;
+        mission.true_SC{i_SC}.true_SC_RCS_thruster{i}.commanded_thrust = x(i);
     else
-        mission.true_SC{i_SC}.true_SC_micro_thruster{i}.command_actuation   = 0;
-        mission.true_SC{i_SC}.true_SC_micro_thruster{i}.commanded_thrust = 0;
+        mission.true_SC{i_SC}.true_SC_RCS_thruster{i}.command_actuation   = 0;
+        mission.true_SC{i_SC}.true_SC_RCS_thruster{i}.commanded_thrust = 0;
     end
 end
 end

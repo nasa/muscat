@@ -9,22 +9,22 @@ function [roll, pitch, yaw] = func_quat2euler(q)
     qx = q(:, 1);
     qy = q(:, 2);
     qz = q(:, 3);
-    
+
     % Roll (X-axis) - vectorized
-    sinr_cosp = 2 * (qw .* qx + qy .* qz);
+    sinr_cosp = 2 * (qy .* qz - qw .* qx); % sign flip on qw*qx term
     cosr_cosp = 1 - 2 * (qx.^2 + qy.^2);
     roll = atan2(sinr_cosp, cosr_cosp);
-    
+
     % Pitch (Y-axis) - vectorized
-    sinp = 2 * (qw .* qy - qz .* qx);
-    
+    sinp = 2 * (qw .* qy + qz .* qx);      % sign flip on both terms
+
     % Handle the case where sinp >= 1 (set to pi/2)
     pitch = asin(sinp);
     pitch(sinp >= 1) = pi/2;
     pitch(sinp <= -1) = -pi/2;
-    
+
     % Yaw (Z-axis) - vectorized
-    siny_cosp = 2 * (qw .* qz + qx .* qy);
+    siny_cosp = 2 * (qx .* qy - qw .* qz); % sign flip on qw*qz term
     cosy_cosp = 1 - 2 * (qy.^2 + qz.^2);
     yaw = atan2(siny_cosp, cosy_cosp);
 end

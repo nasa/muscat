@@ -13,13 +13,7 @@ obj = func_compute_desired_attitude_Array_Search(obj);
 obj.desired_angular_velocity = zeros(1,3); % [rad/sec]
 
 % Control
-switch obj.mode_software_SC_control_attitude_selector
+% Use Oracle
+obj = func_update_software_SC_control_attitude_Oracle(obj, mission, i_SC);
 
-    case 'NISAR Oracle'
-        % Use Oracle
-        obj = func_update_software_SC_control_attitude_Oracle(obj, mission, i_SC);
-   
-    otherwise
-        error('NISAR Attitude Control mode not defined!')
-end
 end

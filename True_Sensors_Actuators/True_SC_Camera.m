@@ -15,8 +15,7 @@ classdef True_SC_Camera < handle
         instantaneous_data_compression % [float <= 1] : Camera data compression (Optional)
 
         mode_true_SC_camera_selector % [string]
-        % - Simple
-
+        
         measurement_wait_time % [sec] How often can measurements be taken?
 
         location % [m] : Location of sensor, in body frame B
@@ -62,6 +61,11 @@ classdef True_SC_Camera < handle
 
         instantaneous_data_generated_per_sample % [kb] : Data generated per sample, in kilo bits (kb)
 
+        instantaneous_data_type = 1 % 0 = Data rate, 1 = Data per sample 
+                                    % used to avoid calling isprop() every time
+                                    % step to determine if using instantaneous_data_rate_generated or
+                                    % instantaneous_data_generated_per_sample, which is slow
+
         pos_points % [unit vector] Location of points in mesh
 
         spherical_points % [unit vector] Location of points in Sphere
@@ -73,6 +77,9 @@ classdef True_SC_Camera < handle
         prev_time_visualize_SC_camera_coverage_during_sim % [sec]
 
         data % Other useful data
+
+        mode_selector_name % [string] Alternative name of mode
+
 
         %% [ ] Properties: Storage Variables
 
@@ -137,9 +144,19 @@ classdef True_SC_Camera < handle
             end
             obj.data.flag_take_picture = 0;
 
-            % Coverage
+            if isfield(init_data, 'mode_selector_name')
+                obj.mode_selector_name = init_data.mode_selector_name;
+            else
+                obj.mode_selector_name = mission.name;
+            end
+            
 
-            obj.flag_show_coverage_plot = init_data.flag_show_coverage_plot; % [Boolean]
+            % Coverage
+            if isfield(init_data, 'flag_show_coverage_plot')
+                obj.flag_show_coverage_plot = init_data.flag_show_coverage_plot; % [Boolean]
+            else
+                obj.flag_show_coverage_plot = 0;
+            end
 
             if isfield(init_data, 'wait_time_visualize_SC_camera_coverage_during_sim')
                 obj.wait_time_visualize_SC_camera_coverage_during_sim = init_data.wait_time_visualize_SC_camera_coverage_during_sim;
@@ -241,8 +258,14 @@ classdef True_SC_Camera < handle
 
                     switch obj.mode_true_SC_camera_selector
 
+                        case 'mission specific'
+                            func_name = ['func_update_true_SC_camera_', obj.mode_selector_name];
+                            this_func_handle = str2func(func_name);
+                            obj = this_func_handle(obj, mission, i_SC, i_HW);
+
+
                         case 'Simple'
-                            obj = func_true_SC_camera_Simple(obj, mission, i_SC, i_HW);
+                            obj = func_update_true_SC_camera_Simple(obj, mission, i_SC, i_HW);
 
                             % Coverage
                             obj = func_coverage_Generic(obj, mission, i_SC);
@@ -283,11 +306,11 @@ classdef True_SC_Camera < handle
 
         end
 
-        %% [ ] Methods: Simple Camera
+        %% [ ] Methods: Update Simple Camera
         % Simple Camera mode
 
 
-        function obj = func_true_SC_camera_Simple(obj, mission, i_SC, i_HW)
+        function obj = func_update_true_SC_camera_Simple(obj, mission, i_SC, i_HW)
 
             obj.instantaneous_data_generated_per_sample = obj.instantaneous_data_compression * obj.instantaneous_data_generated_per_pixel * obj.resolution(1) * obj.resolution(2); % [kb]
 
@@ -298,7 +321,6 @@ classdef True_SC_Camera < handle
                 clf
                 set(obj.plot_handle_camera_image,'Color',rgb('Black'));
                 set(obj.plot_handle_camera_image, 'Units', 'pixels', 'Position', [1 1 obj.resolution])
-                %                 set(obj.plot_handle,'PaperPositionMode','auto');
                 set(obj.plot_handle_camera_image, 'Resize','off');
                 hold on
 
@@ -324,13 +346,13 @@ classdef True_SC_Camera < handle
                 % Light comming from sun
                 %         camlight('headlight')
                 h = light;
-                h.Position = (mission.true_solar_system.SS_body{mission.true_solar_system.index_Sun}.position - mission.true_target{mission.true_SC{i_SC}.true_SC_navigation.index_relative_target}.position);
+                h.Position = (mission.true_solar_system.SS_body{mission.true_solar_system.index_Sun}.position - mission.true_target{mission.true_SC{i_SC}.true_SC_orbit_propagation.index_relative_target}.position);
                 h.Style = 'local';
 
                 % Move SC away from Target
-                campos(mission.true_SC{i_SC}.true_SC_navigation.position_relative_target);
+                campos(mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target);
 
-                target_distance = norm(mission.true_SC{i_SC}.true_SC_navigation.position_relative_target);
+                target_distance = norm(mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target);
 
 
                 % Manage view from current attitude
@@ -343,8 +365,6 @@ classdef True_SC_Camera < handle
 
                 % Plot Stars
                 if obj.flag_show_stars == 1
-
-
 
                     dot_product_angle_array = acosd(mission.true_stars.all_stars_unit_vector * x_true_hat');
                     flag_in_FOV = logical(dot_product_angle_array <= (obj.field_of_view*2));
@@ -360,7 +380,7 @@ classdef True_SC_Camera < handle
                         this_star = target_distance * mission.true_stars.all_stars_unit_vector(idx_array(s),:);
                         plot3(this_star(1),this_star(2),this_star(3),'*w','MarkerSize',(1 + mission.true_stars.maximum_magnitude - mission.true_stars.magnitude_visible(idx_array(s))),'MarkerFaceColor','w','MarkerEdgeColor','w')
                     end
-                end
+                end                
 
                 drawnow limitrate
 
@@ -384,7 +404,7 @@ classdef True_SC_Camera < handle
 
         function obj = func_true_SC_camera_target_visible(obj, mission, i_SC)
 
-            Target_relative_pos_hat = func_normalize_vec(mission.true_target{mission.true_SC{i_SC}.true_SC_navigation.index_relative_target}.position - mission.true_SC{i_SC}.true_SC_navigation.position);
+            Target_relative_pos_hat = func_normalize_vec(mission.true_target{mission.true_SC{i_SC}.true_SC_orbit_propagation.index_relative_target}.position - mission.true_SC{i_SC}.true_SC_orbit_propagation.position);
 
             x_true_hat = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * obj.orientation')';
 
@@ -439,18 +459,18 @@ classdef True_SC_Camera < handle
             subplot(1,3,2)
             hold on
 
-            plot3(mission.true_SC{i_SC}.true_SC_navigation.position_relative_target(1), mission.true_SC{i_SC}.true_SC_navigation.position_relative_target(2), mission.true_SC{i_SC}.true_SC_navigation.position_relative_target(3), 's','MarkerSize',15, 'MarkerFaceColor',rgb('Gray'), 'DisplayName',mission.true_SC{i_SC}.true_SC_body.name)
+            plot3(mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target(1), mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target(2), mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target(3), 's','MarkerSize',15, 'MarkerFaceColor',rgb('Gray'), 'DisplayName',mission.true_SC{i_SC}.true_SC_body.name)
 
             if obj.store.flag_executive(mission.storage.k_storage,1) == 1
                 % Plot Camera Orientation
-                this_location = mission.true_SC{i_SC}.true_SC_navigation.position_relative_target;
+                this_location = mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target;
                 this_orientation = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * obj.orientation')';
 
                 quiver3(this_location(1), this_location(2), this_location(3), this_orientation(1), this_orientation(2), this_orientation(3), ...
                     'LineWidth',3,'DisplayName',obj.name,'Color',rgb('Orange'), 'AutoScaleFactor',200*mission.storage.plot_parameters.quiver_auto_scale_factor);
             end
 
-            i_target = mission.true_SC{i_SC}.true_SC_navigation.index_relative_target;
+            i_target = mission.true_SC{i_SC}.true_SC_orbit_propagation.index_relative_target;
             func_plot_target_shape(i_target, mission);
 
             this_pos_points = mission.true_target{i_target}.radius * (mission.true_target{i_target}.rotation_matrix * obj.pos_points')'; % [km]
@@ -487,7 +507,7 @@ classdef True_SC_Camera < handle
 
             scatter(obj.spherical_points(:,1), obj.spherical_points(:,2), 10, colors, 'filled');
 
-            [radius, lon, lat] = cspice_reclat(mission.true_target{i_target}.rotation_matrix' * mission.true_SC{i_SC}.true_SC_navigation.position_relative_target'); % [radius, longitude [rad], latitude [rad] ]
+            [radius, lon, lat] = cspice_reclat(mission.true_target{i_target}.rotation_matrix' * mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target'); % [radius, longitude [rad], latitude [rad] ]
             %                 plot(rad2deg(lat), rad2deg(lon), 's','MarkerSize',15, 'MarkerFaceColor',rgb('Gray'), 'DisplayName',mission.true_SC{i_SC}.true_SC_body.name)
             plot(rad2deg(lon), rad2deg(lat), 's','MarkerSize',15, 'MarkerFaceColor',rgb('Gray'), 'DisplayName',mission.true_SC{i_SC}.true_SC_body.name)
 

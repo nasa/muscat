@@ -184,10 +184,10 @@ classdef True_SC_Communication_Link < handle
 
             % Check Link Visibility
             if obj.TX_spacecraft == 0
-                obj.flag_TX_RX_visible = mission.true_SC{obj.RX_spacecraft}.true_SC_navigation.flag_visible_Earth;
+                obj.flag_TX_RX_visible = mission.true_SC{obj.RX_spacecraft}.true_SC_orbit_propagation.flag_visible_Earth;
 
             elseif obj.RX_spacecraft == 0
-                obj.flag_TX_RX_visible = mission.true_SC{obj.TX_spacecraft}.true_SC_navigation.flag_visible_Earth;
+                obj.flag_TX_RX_visible = mission.true_SC{obj.TX_spacecraft}.true_SC_orbit_propagation.flag_visible_Earth;
 
             else
                 error('Need to write this code where both are SC!')

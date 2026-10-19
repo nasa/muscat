@@ -13,9 +13,9 @@ mission.true_SC{i_SC}.software_SC_power.flag_executive = 1;
 
 obj.data.prev_latitude = obj.data.latitude; % [deg]
 
-i_target = mission.true_SC{i_SC}.true_SC_navigation.index_relative_target;
+i_target = mission.true_SC{i_SC}.true_SC_orbit_propagation.index_relative_target;
 
-[radius, lon, lat] = cspice_reclat(mission.true_target{i_target}.rotation_matrix' * mission.true_SC{i_SC}.true_SC_navigation.position_relative_target'); % [radius, longitude [rad], latitude [rad] ]
+[radius, lon, lat] = cspice_reclat(mission.true_target{i_target}.rotation_matrix' * mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target'); % [radius, longitude [rad], latitude [rad] ]
 obj.data.longitude = rad2deg(lon); % [deg]
 obj.data.latitude = rad2deg(lat); % [deg]
 obj.data.altitude = radius - mission.true_target{i_target}.radius; % [km]
@@ -35,7 +35,7 @@ end
 
 Sun_pos = mission.true_solar_system.SS_body{mission.true_solar_system.index_Sun}.position; % [km]
 Earth_pos = mission.true_target{i_target}.position; % [km]
-SC_pos = mission.true_SC{i_SC}.true_SC_navigation.position; % [km]
+SC_pos = mission.true_SC{i_SC}.true_SC_orbit_propagation.position; % [km]
 Sun_Earth_SC_Angle = func_angle_between_vectors( func_normalize_vec(Sun_pos - Earth_pos)', func_normalize_vec(SC_pos - Earth_pos)' ); % [rad]
 obj.data.Sun_Earth_SC_Angle = rad2deg(Sun_Earth_SC_Angle); % [deg]
 
@@ -46,7 +46,7 @@ obj.data.Telecom_GS_index = 0;
 for i_HW = 1:1:mission.true_ground_station.num_GS_radio_antenna
 
     this_GS_position = (mission.true_target{i_target}.rotation_matrix * mission.true_GS_radio_antenna{i_HW}.position')'; % [km]
-    this_SC_position = mission.true_SC{i_SC}.true_SC_navigation.position_relative_target; % [km]
+    this_SC_position = mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target; % [km]
     elevation_angle = rad2deg( func_angle_between_vectors( func_normalize_vec(this_GS_position), func_normalize_vec (this_SC_position - this_GS_position) ) ); 
 
     if elevation_angle <= 80 % [deg] threshold

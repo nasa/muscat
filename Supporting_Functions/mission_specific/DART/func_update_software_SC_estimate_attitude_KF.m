@@ -6,7 +6,7 @@ function obj = func_update_software_SC_estimate_attitude_KF(obj, mission, i_SC)
 obj.instantaneous_data_generated_per_sample = (1e-3)*16*20; % [kb] i.e. 20 values per sample, each of 16-bit depth
 
 % Take in measurements from SS, ST, IMU
-
+% For now, just use ST and IMU (ignore sun sensor)
 
 
 

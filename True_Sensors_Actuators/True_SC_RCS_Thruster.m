@@ -1,9 +1,9 @@
-%% Class: True_SC_Micro_Thruster
-% Individual SC's micro thruster
+%% Class: True_SC_RCS_Thruster
+% Individual SC's reaction control system (RCS) thruster
 
-classdef True_SC_Micro_Thruster < handle
+classdef True_SC_RCS_Thruster < handle
     
-    % True_SC_Micro_Thruster class represents a single micro-thruster
+    % True_SC_RCS_Thruster class represents a single micro-thruster
     % with various properties and methods for simulation and analysis.
    
     %% Properties
@@ -11,25 +11,30 @@ classdef True_SC_Micro_Thruster < handle
 
         %% [ ] Properties: Initialized Variables
 
-        instantaneous_power_consumption  %[Watts] : Instantaneous power consumed by unit (if it is switched on)
+        instantaneous_power_consumption  % [Watts] : Instantaneous power consumed by unit (if it is switched on)
 
-        instantaneous_data_generated_per_sample     %[kb] : Data generated during the current time step, in kilo bits
+        instantaneous_data_generated_per_sample %[kb] : Data generated during the current time step, in kilo bits
 
-        mode_true_SC_micro_thruster_selector % Mode (Truth/Simple)
+        instantaneous_data_type = 1 % 0 = Data rate, 1 = Data per sample 
+                                    % used to avoid calling isprop() every time
+                                    % step to determine if using instantaneous_data_rate_generated or
+                                    % instantaneous_data_generated_per_sample, which is slow
 
-        thruster_noise                   %[N] : Added to every dimension of commanded_thrust
+        mode_true_SC_RCS_thruster_selector % Mode (Truth/Simple)
 
-        isp                              %[s] : Specific impulse of the thruster
+        thruster_noise                   % [N] : Added to every dimension of commanded_thrust
 
-        maximum_thrust                   %[N]
+        isp                              % [s] : Specific impulse of the thruster
 
-        minimum_thrust                   %[N] 
+        maximum_thrust                   % [N] : Maximum Thurst that this thruster can produce 
 
-        command_wait_time                %[sec] : Seconds betzeen commands
+        minimum_thrust                   % [N] : Minimum Thurst that this thruster can produce  
 
-        orientation                      %[Unit vector] : Normal vector of thrust in body frame B
+        orientation                      % [Unit vector] : Normal vector of thrust in body frame B
 
-        location                         %[m] : Location of actuator, in body frame B
+        location                         % [m] : Location of actuator, in body frame B
+
+        desired_fuel_tank                % [integer] : Desired fuel tank for this thruster
 
 
         %% [ ] Properties: Variables Computed Internally
@@ -73,7 +78,7 @@ classdef True_SC_Micro_Thruster < handle
         %% [ ] Methods: Constructor
         % Construct an instance of this class
 
-        function obj = True_SC_Micro_Thruster(init_data, mission, i_SC, i_MT)
+        function obj = True_SC_RCS_Thruster(init_data, mission, i_SC, i_MT)
             if isfield(init_data, 'name')
                 obj.name = init_data.name;
             else
@@ -84,8 +89,7 @@ classdef True_SC_Micro_Thruster < handle
             obj.instantaneous_power_consumption = init_data.instantaneous_power_consumption; % Watts
             obj.instantaneous_power_consumed = init_data.instantaneous_power_consumption; % Watts
             obj.instantaneous_data_generated_per_sample = init_data.instantaneous_data_generated_per_sample; % Kb
-            obj.mode_true_SC_micro_thruster_selector = init_data.mode_true_SC_micro_thruster_selector; % Mode (Truth/Simple)
-            obj.command_wait_time = init_data.command_wait_time; % Seconds between commands
+            obj.mode_true_SC_RCS_thruster_selector = init_data.mode_true_SC_RCS_thruster_selector; % Mode (Truth/Simple)
             obj.location = init_data.location; % Meters (body frame)
 
             obj.orientation = init_data.orientation; % Unit vector (body frame)
@@ -103,9 +107,16 @@ classdef True_SC_Micro_Thruster < handle
             obj.instantaneous_data_volume = obj.instantaneous_data_generated_per_sample; % [kb]
 
             % Initialize fuel consumption properties
-            obj.isp = init_data.micro_thruster_ISP; % Get ISP from init data
+            obj.isp = init_data.RCS_thruster_ISP; % Get ISP from init data
             obj.fuel_consumed_per_firing = 0;
             obj.total_fuel_consumed = 0;
+
+            % Initialize desired fuel tank
+            if isfield(init_data, 'desired_fuel_tank')
+                obj.desired_fuel_tank = init_data.desired_fuel_tank;
+            else
+                obj.desired_fuel_tank = 1;
+            end
 
             % Reset all variables
             obj = func_reset_state(obj);
@@ -119,7 +130,7 @@ classdef True_SC_Micro_Thruster < handle
             obj.store.total_fuel_consumed = zeros(mission.storage.num_storage_steps_attitude,1);
 
             % Update storage
-            func_update_true_SC_micro_thruster_store(obj, mission);
+            func_update_true_SC_RCS_thruster_store(obj, mission);
             
             % Update SC Power Class
             func_initialize_list_HW_energy_consumed(mission.true_SC{i_SC}.true_SC_power, obj, mission);
@@ -132,7 +143,7 @@ classdef True_SC_Micro_Thruster < handle
         %% [ ] Methods: Store
         % Update the store variable
 
-        function obj = func_update_true_SC_micro_thruster_store(obj, mission)
+        function obj = func_update_true_SC_RCS_thruster_store(obj, mission)
             % Append new thrust data to the storage arrays            
             obj.store.true_commanded_thrust(mission.storage.k_storage_attitude,:) = obj.true_commanded_thrust;
             obj.store.control_torque_MT(mission.storage.k_storage_attitude,:) = obj.control_torque_MT;
@@ -164,8 +175,8 @@ classdef True_SC_Micro_Thruster < handle
 
         %% [ ] Methods: Main
 
-        function func_main_true_SC_micro_thruster(obj, mission, i_SC, ~)
-            % Main function for True_SC_Micro_Thruster
+        function func_main_true_SC_RCS_thruster(obj, mission, i_SC, ~)
+            % Main function for True_SC_RCS_Thruster
             % Controls thrust application, power consumption, and data generation.
         
             % Reset fuel consumed this firing
@@ -202,18 +213,23 @@ classdef True_SC_Micro_Thruster < handle
                     obj.true_commanded_thrust = obj.commanded_thrust + current_thruster_noise;
 
                     % Compute force vector
-                    obj.control_force_MT = obj.orientation * obj.true_commanded_thrust;
+                    obj.control_force_MT = obj.orientation * obj.true_commanded_thrust; % body-frame
+                    control_force_MT_IF = qvtran(qcon(mission.true_SC{i_SC}.true_SC_adc.attitude),...
+                        obj.control_force_MT); % inertial frame
 
-                    % Compute the torque generated by the thruster
+                    % Compute the torque generated by the thruster in the
+                    % body frame
                     obj.control_torque_MT = cross(obj.location -  mission.true_SC{i_SC}.true_SC_body.location_COM, obj.control_force_MT);
         
                     % Apply the generated torque to the spacecraft ADC
                     mission.true_SC{i_SC}.true_SC_adc.control_torque = ...
-                                mission.true_SC{i_SC}.true_SC_adc.control_torque + obj.control_torque_MT;
+                        mission.true_SC{i_SC}.true_SC_adc.control_torque + obj.control_torque_MT;
 
-                    % Apply the generated force to the spacecraft navigation
-                    mission.true_SC{i_SC}.true_SC_navigation.disturbance_force = ...
-                        mission.true_SC{i_SC}.true_SC_navigation.disturbance_force + (obj.control_force_MT * mission.true_time.time_step_attitude / mission.true_time.time_step ); % [N]
+                    % Apply the generated force to the spacecraft
+                    % navigation in the inertial frame
+                    mission.true_SC{i_SC}.true_SC_orbit_propagation.disturbance_force = ...
+                        mission.true_SC{i_SC}.true_SC_orbit_propagation.disturbance_force + ...
+                        (control_force_MT_IF * mission.true_time.time_step_attitude / mission.true_time.time_step ); % [N]
 
                     % Calculate fuel consumption
                     g0 = 9.80665; % m/s^2
@@ -221,10 +237,11 @@ classdef True_SC_Micro_Thruster < handle
                     obj.total_fuel_consumed = obj.total_fuel_consumed + obj.fuel_consumed_per_firing;
 
                     % Consume fuel from the tank if fuel tank exists
-                    if isfield(mission.true_SC{i_SC}, 'true_SC_fuel_tank') && ...
-                       mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_fuel_tank > 0
-                        % Find the assigned fuel tank (assuming the first one for now)
-                        i_tank = 1;
+                    if obj.desired_fuel_tank == 0
+                        % Dont consume fuel from fuel tank
+                    else 
+                        % Find the desired fuel tank 
+                        i_tank = obj.desired_fuel_tank;                        
                         % Consume fuel from the tank
                         mission.true_SC{i_SC}.true_SC_fuel_tank{i_tank}.func_consume_fuel(obj.fuel_consumed_per_firing);
                     end
@@ -254,7 +271,7 @@ classdef True_SC_Micro_Thruster < handle
             func_update_instantaneous_data_generated_attitude(mission.true_SC{i_SC}.true_SC_data_handling, obj, mission);
 
             % Update storage
-            func_update_true_SC_micro_thruster_store(obj, mission);
+            func_update_true_SC_RCS_thruster_store(obj, mission);
             
             % Add this line to properly reset state after the time step is complete
             % and all data has been stored

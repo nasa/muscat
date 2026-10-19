@@ -12,8 +12,14 @@ classdef True_SC_Science_Radar < handle
 
         instantaneous_data_rate_generated % [kbps] : Data rate, in kilo bits per sec (kbps)
 
+        instantaneous_data_type = 0 % 0 = Data rate, 1 = Data per sample
+        % used to avoid calling isprop() every time
+        % step to determine if using instantaneous_data_rate_generated or
+        % instantaneous_data_generated_per_sample, which is slow
+
         mode_true_SC_science_radar_selector % [string]
-        % - DROID
+        % - Generic
+        % - mission specific
 
         measurement_wait_time % [sec]
 
@@ -56,6 +62,8 @@ classdef True_SC_Science_Radar < handle
         prev_time_visualize_SC_radar_coverage_during_sim % [sec]
 
         data % Other useful data
+
+        mode_selector_name % [string] Alternative name of mode
 
         %% [ ] Properties: Storage Variables
 
@@ -106,6 +114,12 @@ classdef True_SC_Science_Radar < handle
                 obj.data = init_data.data;
             else
                 obj.data = [];
+            end
+
+            if isfield(init_data, 'mode_selector_name')
+                obj.mode_selector_name = init_data.mode_selector_name;
+            else
+                obj.mode_selector_name = mission.name;
             end
 
             % load the science points
@@ -165,7 +179,7 @@ classdef True_SC_Science_Radar < handle
                     obj.store.instantaneous_data_rate_generated(mission.storage.k_storage,:) = obj.instantaneous_data_rate_generated; % [kbps]
                     obj.store.instantaneous_power_consumed(mission.storage.k_storage,:) = obj.instantaneous_power_consumed; % [W]
                 end
-                
+
             end
 
         end
@@ -185,18 +199,18 @@ classdef True_SC_Science_Radar < handle
 
                     switch obj.mode_true_SC_science_radar_selector
 
-                        case 'DROID'
-                            obj = func_true_SC_science_radar_DROID(obj, mission, i_SC);
+                        case 'mission specific'
+                            func_name = ['func_update_true_SC_science_radar_', obj.mode_selector_name];
+                            this_func_handle = str2func(func_name);
+                            obj = this_func_handle(obj, mission, i_SC, i_HW);
 
-                        case 'Nightingale'
-                            obj = func_true_SC_science_radar_Nightingale(obj, mission, i_SC);
-                            %                             mission.storage.last_viz_update_time = -inf;
+                        case 'Generic'
+                            % Update Generic Radar
+                            obj = func_update_true_SC_science_radar_generic(obj, mission, i_SC, i_HW);
 
                         otherwise
                             error('Radar mode not defined!')
-                    end
-                    
-                    obj.prev_time_visualize_SC_radar_coverage_during_sim = -inf;
+                    end                    
 
                 else
                     % Data not generated in this time step
@@ -205,9 +219,7 @@ classdef True_SC_Science_Radar < handle
                 end
 
                 if isfield(obj.data, 'instantaneous_power_consumed_per_SC_mode')
-                    obj.instantaneous_power_consumed = obj.data.instantaneous_power_consumed_per_SC_mode(mission.true_SC{i_SC}.software_SC_executive.this_sc_mode_value); % [W]
-
-                    % Dont do the Slew update
+                    obj.instantaneous_power_consumed = obj.data.instantaneous_power_consumed_per_SC_mode(mission.true_SC{i_SC}.software_SC_executive.this_sc_mode_value); % [W]                    
                 end
 
                 % Update Power Consumed
@@ -215,12 +227,12 @@ classdef True_SC_Science_Radar < handle
 
             else
                 % Do nothing
-                
+
             end
-            
+
 
             % Update Storage
-            obj = func_update_true_SC_science_radar_store(obj, mission);            
+            obj = func_update_true_SC_science_radar_store(obj, mission);
 
             % Plot Radar Coverage
             if (obj.flag_show_radar_plot == 1) && (mission.true_SC{i_SC}.software_SC_executive.time - obj.prev_time_visualize_SC_radar_coverage_during_sim >= obj.wait_time_visualize_SC_radar_coverage_during_sim )
@@ -232,8 +244,45 @@ classdef True_SC_Science_Radar < handle
 
         end
 
-        
-        
+        %% [ ] Methods: Update Generic Radar
+
+        function obj = func_update_true_SC_science_radar_generic(obj, mission, i_SC, i_HW)
+
+            i_target = mission.true_SC{i_SC}.true_SC_orbit_propagation.index_relative_target;
+
+            this_pos_points = (mission.true_target{i_target}.rotation_matrix * obj.pos_points')'; % Rotated unit vectors
+
+            SC_pos_normalize = func_normalize_vec(mission.true_SC{i_SC}.true_SC_orbit_propagation.position - mission.true_target{i_target}.position); % SC unit vector
+
+            dot_prod_angle_array = real(acosd(this_pos_points * SC_pos_normalize')); % [deg] angle between the vectors SC-SB and mesh_point-SB
+
+            if obj.field_of_view == 0
+                % Use cloest point
+                [min_angle,index_point_science_mesh] = min(dot_prod_angle_array);
+
+            else
+                % Use all points within field of view
+                index_point_science_mesh = find(dot_prod_angle_array <= obj.field_of_view);
+
+            end
+
+            % MONOSTATIC
+
+            for i = 1:1:length(index_point_science_mesh)
+
+                if obj.monostatic_observed_point(index_point_science_mesh(i)) == 0
+                    obj.monostatic_num_point_observed = obj.monostatic_num_point_observed + 1;
+                end
+
+                obj.monostatic_observed_point(index_point_science_mesh(i)) = obj.monostatic_observed_point(index_point_science_mesh(i)) + 1;
+
+            end
+
+            % Update Data Generated
+            func_update_instantaneous_data_generated(mission.true_SC{i_SC}.true_SC_data_handling, obj, mission);
+
+        end
+
         %% [ ] Methods: Visualize Radar Coverage
         % Visualize all SC attitude orbit during simulation
 
@@ -273,11 +322,11 @@ classdef True_SC_Science_Radar < handle
             hold on
 
             for i_SC = 1:1:mission.num_SC
-                plot3(mission.true_SC{i_SC}.true_SC_navigation.position_relative_target(1), mission.true_SC{i_SC}.true_SC_navigation.position_relative_target(2), mission.true_SC{i_SC}.true_SC_navigation.position_relative_target(3), 's','MarkerSize',15, 'MarkerFaceColor',rgb('Gray'), 'DisplayName',mission.true_SC{i_SC}.true_SC_body.name)
+                plot3(mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target(1), mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target(2), mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target(3), 's','MarkerSize',15, 'MarkerFaceColor',rgb('Gray'), 'DisplayName',mission.true_SC{i_SC}.true_SC_body.name)
 
                 if obj.store.flag_executive(mission.storage.k_storage,1) == 1
                     % Plot Radar Orientation
-                    this_location = mission.true_SC{i_SC}.true_SC_navigation.position_relative_target;
+                    this_location = mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target;
                     this_orientation = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * obj.orientation')';
 
                     quiver3(this_location(1), this_location(2), this_location(3), this_orientation(1), this_orientation(2), this_orientation(3), ...
@@ -286,7 +335,7 @@ classdef True_SC_Science_Radar < handle
 
             end
 
-            i_target = mission.true_SC{i_SC}.true_SC_navigation.index_relative_target;
+            i_target = mission.true_SC{i_SC}.true_SC_orbit_propagation.index_relative_target;
             func_plot_target_shape(i_target, mission);
 
             this_pos_points = mission.true_target{i_target}.radius * (mission.true_target{i_target}.rotation_matrix * obj.pos_points')'; % [km]
@@ -325,12 +374,12 @@ classdef True_SC_Science_Radar < handle
 
             for i_SC = 1:1:mission.num_SC
 
-                %                 sph = Cartesian2Spherical(mission.true_target{i_target}.rotation_matrix' * mission.true_SC{i_SC}.true_SC_navigation.position_relative_target'); % [r, theta, phi] in radians
+                %                 sph = Cartesian2Spherical(mission.true_target{i_target}.rotation_matrix' * mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target'); % [r, theta, phi] in radians
                 %                 longitude = rad2deg(sph(3)); % [deg]
                 %                 latitude = rad2deg(sph(2)); % [deg]
                 %                 latitude = latitude - 90; % [deg]
 
-                [radius, lon, lat] = cspice_reclat(mission.true_target{i_target}.rotation_matrix' * mission.true_SC{i_SC}.true_SC_navigation.position_relative_target'); % [radius, longitude [rad], latitude [rad] ]
+                [radius, lon, lat] = cspice_reclat(mission.true_target{i_target}.rotation_matrix' * mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target'); % [radius, longitude [rad], latitude [rad] ]
                 %                 plot(rad2deg(lat), rad2deg(lon), 's','MarkerSize',15, 'MarkerFaceColor',rgb('Gray'), 'DisplayName',mission.true_SC{i_SC}.true_SC_body.name)
                 plot(rad2deg(lon), rad2deg(lat), 's','MarkerSize',15, 'MarkerFaceColor',rgb('Gray'), 'DisplayName',mission.true_SC{i_SC}.true_SC_body.name)
             end

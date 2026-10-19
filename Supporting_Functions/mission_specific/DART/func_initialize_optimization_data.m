@@ -9,18 +9,18 @@ function obj = func_initialize_optimization_data(obj, mission, i_SC)
 % Columns correspond to force/torque contributions in each axis.
 
 % Initialize the thruster input array
-thruster_input_array = zeros(mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_micro_thruster, 3);
+thruster_input_array = zeros(mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_RCS_thruster, 3);
 
 % Get the center of mass
 center_of_mass = mission.true_SC{1, 1}.true_SC_body.location_COM;
 
 % Loop through each thruster
-for i = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_micro_thruster
+for i = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_RCS_thruster
     % Calculate the relative position vector
-    relative_position = mission.true_SC{i_SC}.true_SC_micro_thruster{i}.location - center_of_mass;
+    relative_position = mission.true_SC{i_SC}.true_SC_RCS_thruster{i}.location - center_of_mass;
 
     % Compute the torque using the cross product
-    torque = cross(relative_position, mission.true_SC{i_SC}.true_SC_micro_thruster{i}.orientation);
+    torque = cross(relative_position, mission.true_SC{i_SC}.true_SC_RCS_thruster{i}.orientation);
 
     % Round the result to three decimal places
     torque_rounded = round(torque, 3);
@@ -30,7 +30,7 @@ for i = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_micro_thrus
 end
 
 % Number of microthrusters
-N_mt = mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_micro_thruster;
+N_mt = mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_RCS_thruster;
 
 % Flags to track checked microthrusters
 flag_mt_checked = zeros(N_mt, 1);

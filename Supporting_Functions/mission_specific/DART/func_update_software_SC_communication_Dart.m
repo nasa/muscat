@@ -1,6 +1,6 @@
 %% [ ] Methods: Communication for DART
 
-function obj = func_update_software_SC_communication_Dart(obj, mission, i_SC)
+function obj = func_update_software_SC_communication_DART(obj, mission, i_SC)
 
 if strcmp(mission.true_SC{i_SC}.software_SC_executive.this_sc_mode, 'DTE Comm')
 

@@ -12,6 +12,11 @@ classdef True_SC_Remote_Sensing < handle
 
         instantaneous_data_rate_generated % [kbps] : Data rate, in kilo bits per sec (kbps)
 
+        instantaneous_data_type = 0 % 0 = Data rate, 1 = Data per sample
+        % used to avoid calling isprop() every time
+        % step to determine if using instantaneous_data_rate_generated or
+        % instantaneous_data_generated_per_sample, which is slow
+
         mode_true_SC_remote_sensing_selector % [string]
 
         measurement_wait_time % [sec]
@@ -56,6 +61,8 @@ classdef True_SC_Remote_Sensing < handle
         prev_time_visualize_SC_remote_sensing_coverage_during_sim % [sec]
 
         data % Other useful data
+
+        mode_selector_name % [string] Alternative name of mode
 
         %% [ ] Properties: Storage Variables
 
@@ -106,6 +113,12 @@ classdef True_SC_Remote_Sensing < handle
                 obj.data = init_data.data;
             else
                 obj.data = [];
+            end
+
+            if isfield(init_data, 'mode_selector_name')
+                obj.mode_selector_name = init_data.mode_selector_name;
+            else
+                obj.mode_selector_name = mission.name;
             end
 
             % load the science points
@@ -185,11 +198,13 @@ classdef True_SC_Remote_Sensing < handle
 
                     switch obj.mode_true_SC_remote_sensing_selector
 
-                        case 'Generic'
-                            obj = func_coverage_Generic(obj, mission, i_SC);
+                        case 'mission specific'
+                            func_name = ['func_update_true_SC_remote_sensing_', obj.mode_selector_name];
+                            this_func_handle = str2func(func_name);
+                            obj = this_func_handle(obj, mission, i_SC);
 
-                        case 'GoldenDome'
-                            obj = func_coverage_GoldenDome(obj, mission, i_SC);
+                        case 'Generic'
+                            obj = func_update_true_SC_remote_sensing_Generic(obj, mission, i_SC);
 
                         otherwise
                             error('Remote Sensing mode not defined!')
@@ -232,10 +247,74 @@ classdef True_SC_Remote_Sensing < handle
         end
 
 
+        %% [ ] Methods: Update Generic Remote Sensing Coverage        
+
+        function obj = func_update_true_SC_remote_sensing_Generic(obj, mission, i_SC)
+
+            this_orientation = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * obj.orientation')'; % [unit vector]
+
+            this_SC_relative_position = mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target; % [km]
+            distance_SC_Target = norm(this_SC_relative_position); % [km]
+            this_SC_relative_position_normalize = func_normalize_vec(this_SC_relative_position); % [unit vector]
+
+            i_target = mission.true_SC{i_SC}.true_SC_orbit_propagation.index_relative_target;
+            this_pos_points_normalized = (mission.true_target{i_target}.rotation_matrix * obj.pos_points')'; % Rotated unit vectors
+            this_pos_points = mission.true_target{i_target}.radius * this_pos_points_normalized; % [km]
+
+            % Accept Points within Limb Angle
+
+            limb_angle = acosd(mission.true_target{i_target}.radius/distance_SC_Target); % [deg]
+
+            dot_prod_angle_array = real(acosd(this_pos_points_normalized * this_SC_relative_position_normalize')); % [deg] angle between the vectors SC-Target center and mesh_point-Target center
+            idx_array = logical(dot_prod_angle_array <= limb_angle);
+
+            % Accept Points within FOV
+
+            this_pos_points_relative_SC = this_pos_points - this_SC_relative_position; % [km]
+            this_pos_points_relative_SC_normalize = this_pos_points_relative_SC./vecnorm(this_pos_points_relative_SC,2,2); % [unit vector]
+
+            dot_prod_angle_array = real(acosd(this_pos_points_relative_SC_normalize * this_orientation')); % [deg] angle between the vectors SC-Target center and mesh_point-Target center
+
+            idx_array = idx_array & logical(dot_prod_angle_array <= obj.field_of_view);
+
+            index_point_science_mesh = find(idx_array);
+
+            % MONOSTATIC
+
+            if isempty(index_point_science_mesh)
+                % This is empty!
+
+                [min_angle,index_point_science_mesh] = min(dot_prod_angle_array);
+
+            end
+
+            for i = 1:1:length(index_point_science_mesh)
+
+                if obj.monostatic_observed_point(index_point_science_mesh(i)) == 0
+                    obj.monostatic_num_point_observed = obj.monostatic_num_point_observed + 1;
+                end
+
+                obj.monostatic_observed_point(index_point_science_mesh(i)) = obj.monostatic_observed_point(index_point_science_mesh(i)) + 1;
+
+            end
 
 
-        %% [ ] Methods: Visualize Remote Sensing Coverage
-        % Visualize all SC attitude orbit during simulation
+
+
+            if isfield(obj.data, 'instantaneous_data_rate_generated_per_SC_mode')
+                obj.instantaneous_data_rate_generated = obj.data.instantaneous_data_rate_generated_per_SC_mode(mission.true_SC{i_SC}.software_SC_executive.this_sc_mode_value); % [W]
+            end
+
+
+            % Update Data Generated
+            func_update_instantaneous_data_generated(mission.true_SC{i_SC}.true_SC_data_handling, obj, mission);
+
+
+        end
+
+        %% [ ] Methods: Visualize Remote Sensing Coverage (writes to Report/Excel)
+        % Visualize all SC attitude orbit during simulation, and also add the
+        % plots and underlying data to the mission Report/Excel output
 
         function obj = func_visualize_SC_remote_sensing_coverage_during_sim(obj, mission, i_SC, i_HW)
 
@@ -255,109 +334,19 @@ classdef True_SC_Remote_Sensing < handle
 
             subplot(1,3,1)
 
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % % 3D Attitude Vizualization % %
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-            func_plot_single_SC_attitude_v2(mission, i_SC);
-
-            title(['SC ',num2str(i_SC), ', ConOps Mode = ',mission.true_SC{i_SC}.software_SC_executive.this_sc_mode], 'FontSize', mission.storage.plot_parameters.standard_font_size)
-
-
-
-
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % % 3D Remote Sensing Vizualization % %
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+            func_true_SC_remote_sensing_coverage_subplot_attitude(mission, i_SC);
 
             subplot(1,3,2)
-            hold on
 
-            plot3(mission.true_SC{i_SC}.true_SC_navigation.position_relative_target(1), mission.true_SC{i_SC}.true_SC_navigation.position_relative_target(2), mission.true_SC{i_SC}.true_SC_navigation.position_relative_target(3), 's','MarkerSize',15, 'MarkerFaceColor',rgb('Gray'), 'DisplayName',mission.true_SC{i_SC}.true_SC_body.name)
-
-            if obj.store.flag_executive(mission.storage.k_storage,1) == 1
-                % Plot Remote Sensing Orientation
-                this_location = mission.true_SC{i_SC}.true_SC_navigation.position_relative_target;
-                this_orientation = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * obj.orientation')';
-
-                quiver3(this_location(1), this_location(2), this_location(3), this_orientation(1), this_orientation(2), this_orientation(3), ...
-                    'LineWidth',3,'DisplayName',obj.name,'Color',rgb('Orange'), 'AutoScaleFactor',200*mission.storage.plot_parameters.quiver_auto_scale_factor);
-            end
-
-            i_target = mission.true_SC{i_SC}.true_SC_navigation.index_relative_target;
-            func_plot_target_shape(i_target, mission);
-
-            this_pos_points = mission.true_target{i_target}.radius * (mission.true_target{i_target}.rotation_matrix * obj.pos_points')'; % [km]
-
-            % Define a colormap
-            cmap = jet(max(obj.monostatic_observed_point)+1); % Use a colormap with max(obj.monostatic_observed_point)+1 colors
-            cmap(1,:) = NaN*[1 1 1]; % Set 1 to transparent
-
-            % Map the values to colors
-            colors = cmap(1+obj.monostatic_observed_point', :);
-
-            scatter3(this_pos_points(:,1), this_pos_points(:,2), this_pos_points(:,3), 10, colors, 'filled','DisplayName','Remote Sensing Points'); % 50 is the size of the markers
-
-            grid on
-
-            view(3)
-            axis equal
-            legend('Location','southwest')
-            xlabel('X axis [km]')
-            ylabel('Y axis [km]')
-            zlabel('Z axis [km]')
-            set(gca, 'FontSize',mission.storage.plot_parameters.standard_font_size,'FontName',mission.storage.plot_parameters.standard_font_type)
-            title(['3D Remote Sensing Coverage in ', mission.true_target{i_target}.name,'-centered Frame'],'FontSize',mission.storage.plot_parameters.standard_font_size)
-
-            hold off
-
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % % 2D Remote Sensing Vizualization % %
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+            func_true_SC_remote_sensing_coverage_subplot_3d(obj, mission, i_SC);
 
             subplot(2,3,3)
-            hold on
 
-            scatter(obj.spherical_points(:,1), obj.spherical_points(:,2), 10, colors, 'filled');
-
-            [radius, lon, lat] = cspice_reclat(mission.true_target{i_target}.rotation_matrix' * mission.true_SC{i_SC}.true_SC_navigation.position_relative_target'); % [radius, longitude [rad], latitude [rad] ]
-            %                 plot(rad2deg(lat), rad2deg(lon), 's','MarkerSize',15, 'MarkerFaceColor',rgb('Gray'), 'DisplayName',mission.true_SC{i_SC}.true_SC_body.name)
-            plot(rad2deg(lon), rad2deg(lat), 's','MarkerSize',15, 'MarkerFaceColor',rgb('Gray'), 'DisplayName',mission.true_SC{i_SC}.true_SC_body.name)
-
-            % Add colorbar to show mapping
-            colorbar;
-            caxis([0 max(obj.monostatic_observed_point)+1]);
-
-            grid on
-
-            axis equal
-            xlabel('Longitude [deg]')
-            ylabel('Latitude [deg]')
-            set(gca, 'FontSize',mission.storage.plot_parameters.standard_font_size,'FontName',mission.storage.plot_parameters.standard_font_type)
-            title(['2D Remote Sensing Coverage in ', mission.true_target{i_target}.name,'-centered Static Frame'],'FontSize',mission.storage.plot_parameters.standard_font_size)
-
-
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % % Monostatic Remote Sensing Coverage % %
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+            func_true_SC_remote_sensing_coverage_subplot_2d(obj, mission, i_SC);
 
             subplot(2,3,6)
-            hold on
 
-            kd = mission.storage.k_storage;
-
-            plot(mission.true_time.store.time(1:kd), (100/obj.num_points)*obj.store.monostatic_num_point_observed(1:kd), '-k', 'LineWidth',2, 'DisplayName','Actual')
-
-            grid on
-            xlabel('Time [sec]')
-            ylabel('Coverage [%]')
-            set(gca, 'FontSize',mission.storage.plot_parameters.standard_font_size,'FontName',mission.storage.plot_parameters.standard_font_type)
-            title(['Remote Sensing Coverage = ',num2str((100/obj.num_points)*obj.monostatic_num_point_observed),'%'],'FontSize',mission.storage.plot_parameters.standard_font_size)
-
-
+            func_true_SC_remote_sensing_coverage_subplot_time(obj, mission);
 
             drawnow limitrate
 
@@ -366,13 +355,315 @@ classdef True_SC_Remote_Sensing < handle
                 writeVideo(obj.data.myVideo, getframe(plot_handle));
             end
 
+            plot_file_name = [mission.storage.output_folder, mission.name,'_SC',num2str(i_SC),'_Remote_Sensing',num2str(i_HW),'.png'];
+
             if (mission.storage.plot_parameters.flag_save_plots == 1) && (mission.flag_stop_sim == 1)
-                saveas(plot_handle,[mission.storage.output_folder, mission.name,'_SC',num2str(i_SC),'_Remote_Sensing',num2str(i_HW),'.png'])
+                saveas(plot_handle,plot_file_name)
+            end
+
+            %% Write Report
+
+            if (mission.storage.report_parameters.flag_write_report == 1) && (mission.flag_stop_sim == 1)
+
+                import mlreportgen.report.*
+                import mlreportgen.dom.*
+
+                ch = Chapter;
+                ch.Title = ['Results: SC ',num2str(i_SC),' ',obj.name,' Coverage'];
+
+                kd = mission.storage.k_storage;
+
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                % % 3D Attitude Vizualization % %
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+                sec = Section;
+                sec.Title = 'Final Spacecraft Attitude and ConOps Mode';
+
+                plot_handle = figure(120 + (30*i_SC) + i_HW);
+                clf
+                set(plot_handle,'Color',[1 1 1]);
+                set(plot_handle,'units','normalized','outerposition',[0 0 1 1])
+                set(plot_handle,'PaperPositionMode','auto');
+
+                func_true_SC_remote_sensing_coverage_subplot_attitude(mission, i_SC);
+
+                set(gca, 'FontSize', mission.storage.report_parameters.report_plot_font_size)
+                ax = gca;
+                ax.Title.FontSize = mission.storage.report_parameters.report_plot_font_size;
+                ax.XLabel.FontSize = mission.storage.report_parameters.report_plot_font_size;
+                ax.YLabel.FontSize = mission.storage.report_parameters.report_plot_font_size;
+
+                drawnow limitrate
+
+                fig = Figure(gcf);
+                fig.Scaling = "auto";
+                fig.Snapshot.Caption = ['Location: Subplot(1,3,1) inside ',plot_file_name];
+                append(sec,fig);
+
+                para = Paragraph('Explanation of this plot:');
+                para.Bold = true;
+                append(sec,para)
+
+                para = Paragraph(['SC ',num2str(i_SC),'''s attitude and ConOps mode (from SC''s Software_SC_Executive class) at the end of the simulation are shown.']);
+                append(sec,para)
+
+                append(ch,sec)
+
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                % % 3D Remote Sensing Vizualization % %
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+                sec = Section;
+                sec.Title = '3D Remote Sensing Coverage';
+
+                plot_handle = figure(150 + (30*i_SC) + i_HW);
+                clf
+                set(plot_handle,'Color',[1 1 1]);
+                set(plot_handle,'units','normalized','outerposition',[0 0 1 1])
+                set(plot_handle,'PaperPositionMode','auto');
+
+                func_true_SC_remote_sensing_coverage_subplot_3d(obj, mission, i_SC);
+
+                set(gca, 'FontSize', mission.storage.report_parameters.report_plot_font_size)
+                ax = gca;
+                ax.Title.FontSize = mission.storage.report_parameters.report_plot_font_size;
+                ax.XLabel.FontSize = mission.storage.report_parameters.report_plot_font_size;
+                ax.YLabel.FontSize = mission.storage.report_parameters.report_plot_font_size;
+
+                drawnow limitrate
+
+                fig = Figure(gcf);
+                fig.Scaling = "auto";
+                fig.Snapshot.Caption = ['Location: Subplot(1,3,2) inside ',plot_file_name];
+                append(sec,fig);
+
+                para = Paragraph('Explanation of this plot:');
+                para.Bold = true;
+                append(sec,para)
+
+                i_target = mission.true_SC{i_SC}.true_SC_orbit_propagation.index_relative_target;
+                para = Paragraph(['3D view, in the ',mission.true_target{i_target}.name,'-centered frame, of the remote sensing mesh points observed by ',obj.name,' (colored by number of times observed) is shown, along with the spacecraft position and pointing direction at the end of the simulation.']);
+                append(sec,para)
+
+                append(ch,sec)
+
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                % % 2D Remote Sensing Vizualization % %
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+                sec = Section;
+                sec.Title = '2D Remote Sensing Coverage Map';
+
+                plot_handle = figure(180 + (30*i_SC) + i_HW);
+                clf
+                set(plot_handle,'Color',[1 1 1]);
+                set(plot_handle,'units','normalized','outerposition',[0 0 1 1])
+                set(plot_handle,'PaperPositionMode','auto');
+
+                func_true_SC_remote_sensing_coverage_subplot_2d(obj, mission, i_SC);
+
+                set(gca, 'FontSize', mission.storage.report_parameters.report_plot_font_size)
+                ax = gca;
+                ax.Title.FontSize = mission.storage.report_parameters.report_plot_font_size;
+                ax.XLabel.FontSize = mission.storage.report_parameters.report_plot_font_size;
+                ax.YLabel.FontSize = mission.storage.report_parameters.report_plot_font_size;
+
+                drawnow limitrate
+
+                fig = Figure(gcf);
+                fig.Scaling = "auto";
+                fig.Snapshot.Caption = ['Location: Subplot(2,3,3) inside ',plot_file_name];
+                append(sec,fig);
+
+                para = Paragraph('Explanation of this plot:');
+                para.Bold = true;
+                append(sec,para)
+
+                para = Paragraph(['Longitude/Latitude map, in the ',mission.true_target{i_target}.name,'-centered static frame, of the remote sensing mesh points observed by ',obj.name,' (colored by number of times observed) is shown.']);
+                append(sec,para)
+
+                append(ch,sec)
+
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                % % Monostatic Remote Sensing Coverage % %
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+                sec = Section;
+                sec.Title = 'Monostatic Remote Sensing Coverage vs Time';
+
+                plot_handle = figure(210 + (30*i_SC) + i_HW);
+                clf
+                set(plot_handle,'Color',[1 1 1]);
+                set(plot_handle,'units','normalized','outerposition',[0 0 1 1])
+                set(plot_handle,'PaperPositionMode','auto');
+
+                func_true_SC_remote_sensing_coverage_subplot_time(obj, mission);
+
+                set(gca, 'FontSize', mission.storage.report_parameters.report_plot_font_size)
+                ax = gca;
+                ax.Title.FontSize = mission.storage.report_parameters.report_plot_font_size;
+                ax.XLabel.FontSize = mission.storage.report_parameters.report_plot_font_size;
+                ax.YLabel.FontSize = mission.storage.report_parameters.report_plot_font_size;
+
+                drawnow limitrate
+
+                fig = Figure(gcf);
+                fig.Scaling = "auto";
+                fig.Snapshot.Caption = ['Location: Subplot(2,3,6) inside ',plot_file_name];
+                append(sec,fig);
+
+                para = Paragraph('Explanation of this plot:');
+                para.Bold = true;
+                append(sec,para)
+
+                para = Paragraph(['Percentage of the ',obj.name,' mesh points observed at least once (monostatic coverage), as a function of simulation time, is shown.']);
+                append(sec,para)
+
+                para = Paragraph('Variables in Excel file:');
+                para.Bold = true;
+                append(sec,para)
+
+                this_Excel_variable_count = length(mission.storage.report_parameters.Excel_Variable_Names);
+                mission.storage.report_parameters.Excel_Variable_Names{this_Excel_variable_count+1} = ['SC ',num2str(i_SC),' ',obj.name,' Coverage [%]'];
+                this_Excel_variable_count = length(mission.storage.report_parameters.Excel_Variable_Names);
+
+                for i_k = 1:1:kd
+                    mission.storage.report_parameters.Excel_cellData{i_k,this_Excel_variable_count} = (100/obj.num_points)*obj.store.monostatic_num_point_observed(i_k);
+                end
+
+                para = Paragraph(['- "SC ',num2str(i_SC),' ',obj.name,' Coverage [%]" represents the percentage of mesh points observed at least once by ',obj.name,', at every time step.']);
+                append(sec,para)
+
+                append(ch,sec)
+
+                append(mission.storage.report_parameters.report_handle,ch);
+
             end
 
         end
 
 
     end
+end
+
+function func_true_SC_remote_sensing_coverage_subplot_attitude(mission, i_SC)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % 3D Attitude Vizualization % %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+func_plot_single_SC_attitude_v2(mission, i_SC);
+
+title(['SC ',num2str(i_SC), ', ConOps Mode = ',mission.true_SC{i_SC}.software_SC_executive.this_sc_mode], 'FontSize', mission.storage.plot_parameters.standard_font_size)
+
+end
+
+function func_true_SC_remote_sensing_coverage_subplot_3d(obj, mission, i_SC)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % 3D Remote Sensing Vizualization % %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+hold on
+
+plot3(mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target(1), mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target(2), mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target(3), 's','MarkerSize',15, 'MarkerFaceColor',rgb('Gray'), 'DisplayName',mission.true_SC{i_SC}.true_SC_body.name)
+
+if obj.store.flag_executive(mission.storage.k_storage,1) == 1
+    % Plot Remote Sensing Orientation
+    this_location = mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target;
+    this_orientation = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * obj.orientation')';
+
+    quiver3(this_location(1), this_location(2), this_location(3), this_orientation(1), this_orientation(2), this_orientation(3), ...
+        'LineWidth',3,'DisplayName',obj.name,'Color',rgb('Orange'), 'AutoScaleFactor',200*mission.storage.plot_parameters.quiver_auto_scale_factor);
+end
+
+i_target = mission.true_SC{i_SC}.true_SC_orbit_propagation.index_relative_target;
+func_plot_target_shape(i_target, mission);
+
+this_pos_points = mission.true_target{i_target}.radius * (mission.true_target{i_target}.rotation_matrix * obj.pos_points')'; % [km]
+
+% Define a colormap
+cmap = jet(max(obj.monostatic_observed_point)+1); % Use a colormap with max(obj.monostatic_observed_point)+1 colors
+cmap(1,:) = NaN*[1 1 1]; % Set 1 to transparent
+
+% Map the values to colors
+colors = cmap(1+obj.monostatic_observed_point', :);
+
+scatter3(this_pos_points(:,1), this_pos_points(:,2), this_pos_points(:,3), 10, colors, 'filled','DisplayName','Remote Sensing Points'); % 50 is the size of the markers
+
+grid on
+
+view(3)
+axis equal
+legend('Location','southwest')
+xlabel('X axis [km]')
+ylabel('Y axis [km]')
+zlabel('Z axis [km]')
+set(gca, 'FontSize',mission.storage.plot_parameters.standard_font_size,'FontName',mission.storage.plot_parameters.standard_font_type)
+title(['3D Remote Sensing Coverage in ', mission.true_target{i_target}.name,'-centered Frame'],'FontSize',mission.storage.plot_parameters.standard_font_size)
+
+hold off
+
+end
+
+function func_true_SC_remote_sensing_coverage_subplot_2d(obj, mission, i_SC)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % 2D Remote Sensing Vizualization % %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+hold on
+
+i_target = mission.true_SC{i_SC}.true_SC_orbit_propagation.index_relative_target;
+
+% Define a colormap (recomputed here so this subplot can be rendered standalone)
+cmap = jet(max(obj.monostatic_observed_point)+1); % Use a colormap with max(obj.monostatic_observed_point)+1 colors
+cmap(1,:) = NaN*[1 1 1]; % Set 1 to transparent
+
+% Map the values to colors
+colors = cmap(1+obj.monostatic_observed_point', :);
+
+scatter(obj.spherical_points(:,1), obj.spherical_points(:,2), 10, colors, 'filled');
+
+[radius, lon, lat] = cspice_reclat(mission.true_target{i_target}.rotation_matrix' * mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target'); % [radius, longitude [rad], latitude [rad] ]
+plot(rad2deg(lon), rad2deg(lat), 's','MarkerSize',15, 'MarkerFaceColor',rgb('Gray'), 'DisplayName',mission.true_SC{i_SC}.true_SC_body.name)
+
+% Add colorbar to show mapping
+colorbar;
+caxis([0 max(obj.monostatic_observed_point)+1]);
+
+grid on
+
+axis equal
+xlabel('Longitude [deg]')
+ylabel('Latitude [deg]')
+set(gca, 'FontSize',mission.storage.plot_parameters.standard_font_size,'FontName',mission.storage.plot_parameters.standard_font_type)
+title(['2D Remote Sensing Coverage in ', mission.true_target{i_target}.name,'-centered Static Frame'],'FontSize',mission.storage.plot_parameters.standard_font_size)
+
+hold off
+
+end
+
+function func_true_SC_remote_sensing_coverage_subplot_time(obj, mission)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % Monostatic Remote Sensing Coverage % %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+hold on
+
+kd = mission.storage.k_storage;
+
+plot(mission.true_time.store.time(1:kd), (100/obj.num_points)*obj.store.monostatic_num_point_observed(1:kd), '-k', 'LineWidth',2, 'DisplayName','Actual')
+
+grid on
+xlabel('Time [sec]')
+ylabel('Coverage [%]')
+set(gca, 'FontSize',mission.storage.plot_parameters.standard_font_size,'FontName',mission.storage.plot_parameters.standard_font_type)
+title(['Remote Sensing Coverage = ',num2str((100/obj.num_points)*obj.monostatic_num_point_observed),'%'],'FontSize',mission.storage.plot_parameters.standard_font_size)
+
+hold off
+
 end
 

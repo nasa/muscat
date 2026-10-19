@@ -26,7 +26,7 @@ mission.num_target = 1;        % Number of Target bodies
 mission.frame = 'Relative';    % Frame type: 'Absolute', 'Relative', or 'Combined'
 mission.flag_stop_sim = 0;     % Boolean flag to stop simulation if needed
 
-mission.this_phase = 'Hurricane Helene';
+mission.this_phase = '~Texas heavy rain';
 % 1: 'Hurricane Helene' 0 UTC, 24 September 2024 to 0 UTC, 1 October 2024 (Hurricane Helene)
 % 2: 'Texas heavy rain' 0 UTC, 3 July 2025 to 12 UTC, 5 July, 2025 (Texas heavy rain)
 
@@ -65,6 +65,12 @@ init_data.wait_time_realtime_plotting = 60*60; % [sec] Wait time between plots (
 init_data.flag_save_plots = 1; % [Boolean] 1: Save them (takes little time), 0: Doesnt save them (Optional)
 init_data.flag_save_video = 0; % [Boolean]1 1: Save them (takes a lot more time), 0: Doesnt save them (Optional)
 init_data.quiver_auto_scale_factor = 1;    % (Optional)
+init_data.mode_storage_viz_selector = 'mission specific'; % Use mission-specific viz code
+init_data.mode_selector_name = 'NISAR_2SC';
+
+init_data.flag_write_report = 0; % [Boolean] : 1 = Enable report writing
+init_data.report_authors = 'Pedro Neves and Saptarshi Bandyopadhyay';
+
 mission.storage = Storage(init_data, mission);
 
 % Set font size for plots
@@ -462,10 +468,6 @@ for i_SC = 1:1:mission.num_SC
     init_data.num_hardware_exists.num_solar_panel = 2;
     init_data.num_hardware_exists.num_battery = 1;
     init_data.num_hardware_exists.num_onboard_memory = 1;
-    init_data.num_hardware_exists.num_sun_sensor = 0;
-    init_data.num_hardware_exists.num_star_tracker = 0;
-    init_data.num_hardware_exists.num_imu = 0;
-    init_data.num_hardware_exists.num_micro_thruster = 0; % Failed attempt
     init_data.num_hardware_exists.num_chemical_thruster = 0;
     init_data.num_hardware_exists.num_reaction_wheel = 0;
     init_data.num_hardware_exists.num_communication_link = 2*mission.true_ground_station.num_GS_radio_antenna;
@@ -496,15 +498,12 @@ for i_SC = 1:1:mission.num_SC
         switch mission.this_phase
 
             case 'Hurricane Helene'
-                % 6AM-6PM orbit
                 RAAN = deg2rad(91); % [rad]
 
             case 'Texas heavy rain'
-                % 6AM-6PM orbit
                 RAAN = deg2rad(12); % [rad]
 
-            otherwise  
-                % 6AM-6PM orbit
+            otherwise
                 RAAN = deg2rad(47.5); % [rad]
 
         end
@@ -514,28 +513,13 @@ for i_SC = 1:1:mission.num_SC
         switch mission.this_phase
 
             case 'Hurricane Helene'
-                % 12AM-12PM orbit
-                % RAAN = deg2rad(91+90); % [rad]
-
-                % 6AM-6PM orbit
-                RAAN = deg2rad(91); % [rad]
-                M = deg2rad(180); % [rad]
+                RAAN = deg2rad(91+90); % [rad]
 
             case 'Texas heavy rain'
-                % 12AM-12PM orbit
-                % RAAN = deg2rad(12+90); % [rad]
-
-                % 6AM-6PM orbit
-                RAAN = deg2rad(12); % [rad]
-                M = deg2rad(180); % [rad]
+                RAAN = deg2rad(12+90); % [rad]
 
             otherwise
-                % 12AM-12PM orbit
-                % RAAN = deg2rad(135); % [rad]
-
-                % 6AM-6PM orbit
-                RAAN = deg2rad(47.5); % [rad]
-                M = deg2rad(180); % [rad]
+                RAAN = deg2rad(135); % [rad]
 
         end
 
@@ -561,9 +545,9 @@ for i_SC = 1:1:mission.num_SC
 
     init_data.name_relative_target = 'Earth';
 
-    init_data.mode_true_SC_navigation_dynamics_selector = 'Relative Dynamics';
+    init_data.mode_true_SC_orbit_propagation_dynamics_selector = 'Relative Dynamics';
 
-    mission.true_SC{i_SC}.true_SC_navigation = True_SC_Navigation(init_data, mission);
+    mission.true_SC{i_SC}.true_SC_orbit_propagation = True_SC_Orbit_Propagation(init_data, mission);
 
     %% Initialize First Spacecraft's Attitude
 
@@ -626,7 +610,7 @@ for i_SC = 1:1:mission.num_SC
         % Basic properties
         init_data.name = ['Fuel Tank ', num2str(i_HW)];
         init_data.instantaneous_power_consumed = 5.0;    % [W] for heaters, valves, etc.
-        init_data.instantaneous_data_rate_generated = 0.1;  % [kbps] for telemetry
+        init_data.instantaneous_data_rate_generated = (1e-3)*8;  % [kbps] for telemetry
 
         % Fuel properties
         init_data.maximum_capacity = 90.0;    % [kg] total fuel capacity
@@ -680,8 +664,8 @@ for i_SC = 1:1:mission.num_SC
 
     for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_solar_panel
         init_data = [];
-        init_data.instantaneous_power_consumed = 10; % [W]
-        init_data.instantaneous_data_rate_generated = 1.5e9; % [kbps]
+        init_data.instantaneous_power_consumed = 0; % [W]
+        init_data.instantaneous_data_rate_generated = (1e-3)*8; % [kbps]
         init_data.shape_model = [];
 
         panel_length = 5.5;        % Length along Y
@@ -741,8 +725,8 @@ for i_SC = 1:1:mission.num_SC
         init_data.maximum_capacity = 11000; % [W hr] (known)
         init_data.charging_efficiency = 0.96; % [float <= 1]
         init_data.discharging_efficiency = 0.96; % [float <= 1]
-        init_data.instantaneous_power_consumed = 10; % [W]
-        init_data.instantaneous_data_rate_generated = 7.4e6; % [kbps] i.e. 1 Byte per sec
+        init_data.instantaneous_power_consumed = 0; % [W]
+        init_data.instantaneous_data_rate_generated = (1e-3)*8; % [kbps] i.e. 1 Byte per sec
 
         mission.true_SC{i_SC}.true_SC_battery{i_HW} = True_SC_Battery(init_data, mission, i_SC, i_HW);
 
@@ -797,7 +781,7 @@ for i_SC = 1:1:mission.num_SC
         init_data.wait_time_visualize_SC_camera_coverage_during_sim = 10*60; % [sec]
         init_data.num_points = 5000; % [integer]
 
-        init_data.instantaneous_data_generated_per_pixel = (1e-3)* 8; % [kb]
+        init_data.instantaneous_data_generated_per_pixel = (1e-3)*8; % [kb]
 
         mission.true_SC{i_SC}.true_SC_camera{i_HW} = True_SC_Camera(init_data, mission, i_SC, i_HW);
 
@@ -845,198 +829,7 @@ for i_SC = 1:1:mission.num_SC
         mission.true_SC{i_SC}.true_SC_sun_sensor{i_HW} = True_SC_Sun_Sensor(init_data, mission, i_SC, i_HW);
 
     end
-
-    %% Initialize First Spacecraft's Star Tracker
-
-    % Everything presumed - star trackers that could fit in the I-3K bus
-
-    for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_star_tracker
-
-        init_data = [];
-
-        init_data.instantaneous_power_consumed = 1.5; %
-        init_data.instantaneous_data_generated_per_sample = (4 + 1)*16e-3; % [kb] : 4 quaternion + 1 time vector, each of 16-bit depth
-        init_data.mode_true_SC_star_tracker_selector = 'Simple with Sun outside FOV';
-        init_data.measurement_wait_time = 0.1; % [sec]
-        init_data.measurement_noise = 1e-4; % [rad]
-        init_data.field_of_view = 19; % [deg]
-
-        switch i_HW
-
-            case 1
-                init_data.location = [0.3, ymin, zH];
-                init_data.orientation = [0 -1 0];
-
-            case 2
-                init_data.location = [3.8, ymin, zL];
-                init_data.orientation = [0 0 -1];
-
-            case 3
-                init_data.location = [2, ymax, zL];
-                init_data.orientation = [0 1 0];
-
-            otherwise
-                error('Should not reach here!')
-        end
-
-        mission.true_SC{i_SC}.true_SC_star_tracker{i_HW} = True_SC_Star_Tracker(init_data, mission, i_SC, i_HW);
-
-    end
-
-    %% Initialize First Spacecraft's IMU
-
-    % Everything presumed
-
-    for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_imu
-
-        init_data = [];
-
-        init_data.instantaneous_power_consumed = 2.5; % [W]
-        init_data.instantaneous_data_generated_per_sample = (3 + 1)*16e-3; % [kb] : 3 angular velocity + 1 time vector, each of 16-bit depth
-        init_data.mode_true_SC_imu_selector = 'Simple';
-        init_data.measurement_wait_time = 0.1; % [sec]
-        init_data.measurement_noise = 2e-5; % [rad/sec]
-
-        init_data.location = [2.75 1.0 1.0]; % [m]
-        init_data.orientation = [1 0 0]; % [unit vector]
-
-        mission.true_SC{i_SC}.true_SC_imu{i_HW} = True_SC_IMU(init_data, mission, i_SC, i_HW);
-
-    end
-
-    %% Initialize First Spacecraft's Micro Thrusters (to be finished later)
-
-    for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_micro_thruster
-
-        init_data = [];
-
-        init_data.instantaneous_power_consumption = 50; % Watts
-        init_data.instantaneous_data_generated_per_sample = (3)*16e-3; % [kb] : thrust + health + temperature, each of 16-bit depth
-        init_data.mode_true_SC_micro_thruster_selector = 'Simple'; % Mode (Truth/Simple)
-        init_data.thruster_noise = 100*(1e-6); % Noise level [N](unit depends on implementation)
-
-        init_data.micro_thruster_ISP = 220; % [sec]
-
-        if i_HW <= 11
-            init_data.minimum_thrust = 0.1;  % [N] minimum for 11 N thrusters
-            init_data.maximum_thrust = 11;   % [N] max thrust for these thrusters
-        else
-            init_data.minimum_thrust = 0.01; % [N] min for 1 N thrusters
-            init_data.maximum_thrust = 1;    % [N] max thrust for these thrusters
-        end
-
-        init_data.command_wait_time = 0.5; % Seconds between commands
-
-        switch i_HW
-            case 1
-                init_data.location = [1.0, 0.5, 0.2];
-                init_data.orientation = [1 0 0];
-            case 2
-                init_data.location = [1.0, -0.5, 0.2];
-                init_data.orientation = [-1 0 0];
-            case 3
-                init_data.location = [-1.0, 0.5, 0.2];
-                init_data.orientation = [0 1 0];
-            case 4
-                init_data.location = [-1.0, -0.5, 0.2];
-                init_data.orientation = [0 -1 0];
-            case 5
-                init_data.location = [0.5, 1.0, 0.5];
-                init_data.orientation = [0 0 1];
-            case 6
-                init_data.location = [0.5, -1.0, 0.5];
-                init_data.orientation = [0 0 -1];
-            case 7
-                init_data.location = [0.0, 0.5, -0.5];
-                init_data.orientation = [1 0 0];
-            case 8
-                init_data.location = [0.0, -0.5, -0.5];
-                init_data.orientation = [-1 0 0];
-            case 9
-                init_data.location = [0.5, 0.0, -0.5];
-                init_data.orientation = [0 1 0];
-            case 10
-                init_data.location = [-0.5, 0.0, -0.5];
-                init_data.orientation = [0 -1 0];
-            case 11
-                init_data.location = [0.0, 0.0, 1.0];
-                init_data.orientation = [0 0 1];
-                % Last four thrusters (1 N)
-            case 12
-                init_data.location = [0.25, 0.25, 0.2];
-                init_data.orientation = [1 0 0];
-            case 13
-                init_data.location = [0.25, -0.25, 0.2];
-                init_data.orientation = [-1 0 0];
-            case 14
-                init_data.location = [-0.25, 0.25, 0.2];
-                init_data.orientation = [0 1 0];
-            case 15
-                init_data.location = [-0.25, -0.25, 0.2];
-                init_data.orientation = [0 -1 0];
-            otherwise
-                error('Should not reach here!')
-        end
-
-        mission.true_SC{i_SC}.true_SC_micro_thruster{i_HW} = True_SC_Micro_Thruster(init_data, mission, i_SC, i_HW);
-
-    end
-
-
-    %% Initialize the Reaction Wheels  (finish later - positions/orientations to be completed)
-
-    % Everything presumed
-
-    for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_reaction_wheel
-
-        init_data = [];
-        init_data.location = [2.75, 1.0, zmin];
-        init_data.radius = 0.3; % [m] radius of 1 RW
-        init_data.mass = 10; % [kg] mass of 1 RW
-        init_data.max_angular_velocity = 6000*2*pi/60; % [rad/s] 6000 RPM
-        init_data.angular_velocity_noise = 0.001*2*pi/60;      % [rad/s] velocity noise
-        init_data.instantaneous_data_generated_per_sample = (3)*16e-3; % [kb] : thrust + health + temperature, each of 16-bit depth
-        init_data.max_torque = 0.2; % Nm
-
-        % Calculate and set maximum acceleration
-        % This is redundant with the calculation in the True_SC_Reaction_Wheel constructor,
-        % but makes it explicit and easier to adjust
-        moment_of_inertia = 0.5 * init_data.mass * init_data.radius^2;
-        init_data.maximum_acceleration = init_data.max_torque / moment_of_inertia; % rad/s^2
-
-        init_data.power_consumed_angular_velocity_array = [1e-3*[180 600 6000]; [0 1000*2*pi/60 init_data.max_angular_velocity]]; % [power_array ; velocity_array]
-
-        % 3 wheel configuration
-        if(mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_reaction_wheel == 3)
-            switch i_HW
-                case 1
-                    init_data.orientation = [1, 0, 0];  % X-axis
-                case 2
-                    init_data.orientation = [0, 1, 0];  % Y-axis
-                case 3
-                    init_data.orientation = [0, 0, -1];  % Z-axis
-            end
-        end
-
-        % 4 wheel configuration
-        if(mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_reaction_wheel == 4)
-            switch i_HW
-                case 1
-                    init_data.orientation = [1, 1, 0]/sqrt(2);  % Diagonal in XY-plane
-                case 2
-                    init_data.orientation = [1, -1, 0]/sqrt(2); % Diagonal in XY-plane
-                case 3
-                    init_data.orientation = [0, 1, 1]/sqrt(2);  % Diagonal in YZ-plane
-                case 4
-                    init_data.orientation = [0, 1, -1]/sqrt(2); % Diagonal in YZ-plane
-            end
-        end
-
-        mission.true_SC{i_SC}.true_SC_reaction_wheel{i_HW} = True_SC_Reaction_Wheel(init_data, mission, i_SC, i_HW);
-
-    end
-
-
+    
     %% Chemical Thruster Configuration
     for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster
 
@@ -1199,7 +992,8 @@ for i_SC = 1:1:mission.num_SC
 
     init_data = [];
     init_data.sc_modes = {'Science Mode', 'Maximize SP Power', 'Telecom'};
-    init_data.mode_software_SC_executive_selector = 'NISAR';
+    init_data.mode_software_SC_executive_selector = 'mission specific';
+    init_data.mode_selector_name = 'NISAR';
 
     mission.true_SC{i_SC}.software_SC_executive = Software_SC_Executive(init_data, mission, i_SC);
 
@@ -1227,16 +1021,17 @@ for i_SC = 1:1:mission.num_SC
 
     %% Spacecraft Software: Attitude Control Configuration
 
-    init_data = [];
-    init_data.mode_software_SC_control_attitude_selector = 'NISAR Oracle';
-    init_data.control_gain = [1 0.2];    % Controller gain parameters
+    init_data = [];    
+    init_data.mode_software_SC_control_attitude_selector = 'mission specific'; % 'NISAR Oracle';
+    init_data.mode_selector_name = 'NISAR';
 
     mission.true_SC{i_SC}.software_SC_control_attitude = Software_SC_Control_Attitude(init_data, mission, i_SC);
 
     %% Spacecraft Software: Communication Configuration
 
     init_data = [];
-    init_data.mode_software_SC_communication_selector = 'NISAR';
+    init_data.mode_software_SC_communication_selector = 'mission specific'; 
+    init_data.mode_selector_name = 'NISAR';
     init_data.instantaneous_data_generated_per_sample = (1e-3)*8*2;  % [kb] 2 Bytes per sample
     init_data.attitude_error_threshold_deg = 1;  % [deg] Max attitude error for communication
 

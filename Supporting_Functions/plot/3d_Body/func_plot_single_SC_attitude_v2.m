@@ -97,6 +97,26 @@ for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_camera
 end
 
 
+% Telescope visualization with attitude transformation
+for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_telescope
+    equipment = mission.true_SC{i_SC}.true_SC_telescope{i_HW};
+
+    % Equipment location and orientation
+    HW_location = equipment.location;
+    HW_orientation = equipment.orientation;
+
+    % Apply attitude rotation if available
+    if has_attitude
+        HW_location = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * (HW_location - mission.true_SC{i_SC}.true_SC_body.location_COM)' )' + mission.true_SC{i_SC}.true_SC_body.location_COM;
+        HW_orientation = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * HW_orientation')';
+    end
+
+    % Direction arrows (hidden from legend)
+    q = quiver3(HW_location(1), HW_location(2), HW_location(3), HW_orientation(1), HW_orientation(2), HW_orientation(3), ...
+        'LineWidth', 2, 'Color', rgb('DarkGreen'), 'AutoScaleFactor', mission.storage.plot_parameters.quiver_auto_scale_factor, 'DisplayName',equipment.name);
+end
+
+
 % Star Tracker visualization with attitude transformation
 for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_star_tracker
     equipment = mission.true_SC{i_SC}.true_SC_star_tracker{i_HW};
@@ -218,9 +238,9 @@ for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_reacti
 end
 
 
-% Micro Thruster visualization with attitude transformation
-for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_micro_thruster
-    equipment = mission.true_SC{i_SC}.true_SC_micro_thruster{i_HW};
+% RCS Thruster visualization with attitude transformation
+for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_RCS_thruster
+    equipment = mission.true_SC{i_SC}.true_SC_RCS_thruster{i_HW};
 
     % Equipment location and orientation
     HW_location = equipment.location;
@@ -265,17 +285,22 @@ for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_ep_thr
 
     % Equipment location and orientation
     HW_location = equipment.location;
-    HW_orientation = equipment.orientation;
+    HW_orientation = -equipment.thrust_vector_direction;
 
     % Apply attitude rotation if available
     if has_attitude
         HW_location = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * (HW_location - mission.true_SC{i_SC}.true_SC_body.location_COM)' )' + mission.true_SC{i_SC}.true_SC_body.location_COM;
         HW_orientation = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * HW_orientation')';
     end
-
+    
+    if i_HW < 3
     % Direction arrows (hidden from legend)
     q = quiver3(HW_location(1), HW_location(2), HW_location(3), HW_orientation(1), HW_orientation(2), HW_orientation(3), ...
         'LineWidth', 2, 'Color', rgb('Yellow'), 'AutoScaleFactor', mission.storage.plot_parameters.quiver_auto_scale_factor, 'DisplayName',equipment.name);
+    else
+        q = quiver3(HW_location(1), HW_location(2), HW_location(3), HW_orientation(1), HW_orientation(2), HW_orientation(3), ...
+        'LineWidth', 2, 'Color', rgb('Yellow'), 'AutoScaleFactor',mission.storage.plot_parameters.quiver_auto_scale_factor, 'DisplayName',equipment.name);
+    end
 end
 
 
@@ -284,7 +309,7 @@ for i_target = 1:1:mission.num_target
 
     % Target location and orientation
     Target_location = mission.true_SC{i_SC}.true_SC_body.location_COM;
-    Target_orientation = func_normalize_vec(mission.true_target{i_target}.position - mission.true_SC{i_SC}.true_SC_navigation.position);
+    Target_orientation = func_normalize_vec(mission.true_target{i_target}.position - mission.true_SC{i_SC}.true_SC_orbit_propagation.position);
 
     % Direction arrows (hidden from legend)
     q = quiver3(Target_location(1), Target_location(2), Target_location(3), Target_orientation(1), Target_orientation(2), Target_orientation(3), ...
@@ -295,9 +320,9 @@ end
 
 % Sun Direction visualization
 Target_location = mission.true_SC{i_SC}.true_SC_body.location_COM;
-Target_orientation = func_normalize_vec(mission.true_solar_system.SS_body{mission.true_solar_system.index_Sun}.position - mission.true_SC{i_SC}.true_SC_navigation.position);
+Target_orientation = func_normalize_vec(mission.true_solar_system.SS_body{mission.true_solar_system.index_Sun}.position - mission.true_SC{i_SC}.true_SC_orbit_propagation.position);
 
-% Direction arrows (hidden from legend)
+% Direction arrows 
 q = quiver3(Target_location(1), Target_location(2), Target_location(3), Target_orientation(1), Target_orientation(2), Target_orientation(3), ...
     'LineWidth', 5, 'Color', rgb('Gold'), 'AutoScaleFactor', 10*mission.storage.plot_parameters.quiver_auto_scale_factor, 'DisplayName',mission.true_solar_system.SS_body{mission.true_solar_system.index_Sun}.name);
 
@@ -305,16 +330,24 @@ q = quiver3(Target_location(1), Target_location(2), Target_location(3), Target_o
 % Earth Direction visualization
 if mission.true_solar_system.index_Earth ~= 0
     Target_location = mission.true_SC{i_SC}.true_SC_body.location_COM;
-    Target_orientation = func_normalize_vec(mission.true_solar_system.SS_body{mission.true_solar_system.index_Earth}.position - mission.true_SC{i_SC}.true_SC_navigation.position);
+    Target_orientation = func_normalize_vec(mission.true_solar_system.SS_body{mission.true_solar_system.index_Earth}.position - mission.true_SC{i_SC}.true_SC_orbit_propagation.position);
 
-    % Direction arrows (hidden from legend)
+    % Direction arrows 
     q = quiver3(Target_location(1), Target_location(2), Target_location(3), Target_orientation(1), Target_orientation(2), Target_orientation(3), ...
         'LineWidth', 5, 'Color', rgb('Blue'), 'AutoScaleFactor', 8*mission.storage.plot_parameters.quiver_auto_scale_factor, 'DisplayName',mission.true_solar_system.SS_body{mission.true_solar_system.index_Earth}.name);
 end
 
+% Angular momentum of the spacecraft Direction visualization
+
+% COM_I = mission.true_SC{i_SC}.true_SC_body.location_COM;
+% H_I = mission.true_SC{i_SC}.true_SC_adc.rotation_matrix *mission.true_SC{i_SC}.true_SC_adc.total_sc_momentum';
+% 
+% quiver3(COM_I(1),COM_I(2),COM_I(3),H_I(1),H_I(2),H_I(3),...
+%     'LineWidth', 5, 'Color', rgb('Purple'), 'AutoScaleFactor', .2*mission.storage.plot_parameters.quiver_auto_scale_factor, 'DisplayName','Angular Momentum')
+% 
+
 
 % Plot settings
-axis equal
 grid on
 % Create a legend in a more visible position
 lgd = legend('Location', 'southeast');
@@ -326,6 +359,8 @@ set(gca, 'FontSize', mission.storage.plot_parameters.standard_font_size, 'FontNa
 
 % Set a fixed view angle that makes rotations more visible
 view(3)
+
+axis equal
 
 hold off
 

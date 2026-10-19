@@ -39,7 +39,7 @@ plot(ms.true_time.time_array_dynamics(1:kd),ms.true_SC{plot_SC_number}.SC_SB_Dis
 plot(ms.true_time.time_array_dynamics(1:kd),ms.true_SC{plot_SC_number}.SC_SB_Distance(1:kd,2) ,'--b','LineWidth',2)
 plot(ms.true_time.time_array_dynamics(kd),ms.true_SC{plot_SC_number}.SC_SB_Distance(kd,1),'or','MarkerSize',10)
 
-plot(ms.true_time.time_array_dynamics(1:kd), ones(length(ms.true_time.time_array_dynamics(1:kd)), 1).*mission_true_small_body.radius*mission_true_SC{1}.true_SC_navigation.ratio_orbit_radius_SB_radius, '--k','LineWidth',2)
+plot(ms.true_time.time_array_dynamics(1:kd), ones(length(ms.true_time.time_array_dynamics(1:kd)), 1).*mission_true_small_body.radius*mission_true_SC{1}.true_SC_orbit_propagation.ratio_orbit_radius_SB_radius, '--k','LineWidth',2)
 
 %plot(ms.true_time.time_array_dynamics(1:kd), vecnorm(ms.true_SC{plot_SC_number}.desired_distance(1:kd, 1:3), 2,2), 'k','LineWidth',2);
 

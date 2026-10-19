@@ -478,9 +478,9 @@ for i_SC = 1:1:mission.num_SC
 
     % Micro Thruster visualization with attitude transformation
     mt_handles = [];
-    if mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_micro_thruster > 0
-        for i_mt = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_micro_thruster
-            MT = mission.true_SC{i_SC}.true_SC_micro_thruster{i_mt};
+    if mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_RCS_thruster > 0
+        for i_mt = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_RCS_thruster
+            MT = mission.true_SC{i_SC}.true_SC_RCS_thruster{i_mt};
 
             % Apply attitude transformation to thruster location and orientation
             location = MT.location;

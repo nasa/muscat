@@ -58,24 +58,31 @@ classdef True_SC_Body < handle
         % - num_sun_sensor [integer]
         % - num_star_tracker [integer]
         % - num_imu [integer]
-        % - num_micro_thruster [integer]
+        % - num_RCS_thruster [integer]
         % - num_reaction_wheel [integer]
         % - num_magnetorquer [integer]
         % - num_camera [integer]
+        % - num_telescope [integer]
         % - num_chemical_thruster [integer]
         % - num_ep_thruster [integer]
         % - num_solar_panel [integer]
-        % - num_RTG [integer]
+        % - num_RPS [integer]
         % - num_battery [integer]
         % - num_PDC [integer]
         % - num_radio_antenna [integer]
-        % - num_dte_communication [integer]
-        % - num_intersat_communication [integer]
+        % - num_communication_link [integer]
         % - num_onboard_memory [integer]
         % - num_science_radar [integer]
         % - num_science_altimeter [integer]
         % - num_science_telescope [integer]
         % - num_science_camera [integer]
+        % - num_generic_sensor [integer]
+        % - num_science_processor [integer]
+        % - num_fuel_tank [integer]
+        % - num_onboard_computer [integer]
+        % - num_remote_sensing [integer]
+
+        rgb_color % [string] Used for plotting
 
 
         %% [ ] Properties: Variables Computed Internally
@@ -102,6 +109,12 @@ classdef True_SC_Body < handle
                 obj.name = ['SC ',num2str(init_data.i_SC)];
             end
 
+            if isfield(init_data, 'rgb_color')
+                obj.rgb_color = init_data.rgb_color;
+            else
+                obj.rgb_color = 'Cyan';
+            end
+
             % mass
             obj.mass = [];
             obj.mass.dry{1}.mass = 0; % [kg]
@@ -110,7 +123,6 @@ classdef True_SC_Body < handle
 
             if isfield(init_data.mass, 'supplement')
                 obj.mass.supplement = init_data.mass.supplement;
-
             else
                 obj.mass.supplement{1}.mass = 0;
                 obj.mass.supplement{1}.location = [0 0 0]; % [m]
@@ -392,21 +404,22 @@ classdef True_SC_Body < handle
                     % Update propellant mass from fuel tank
                     obj.mass.propellant{i_FT}.mass = mission.true_SC{i_SC}.true_SC_fuel_tank{i_FT}.instantaneous_fuel_mass; % [kg]
                     obj.mass.propellant{i_FT}.location = mission.true_SC{i_SC}.true_SC_fuel_tank{i_FT}.location; % [m]
+                    obj.mass.propellant{i_FT}.MI_over_m = zeros(3,3);
                     
-                    % Calculate approximate moment of inertia for a simple cuboid fuel mass
-                    % This is a simplified approach - for greater accuracy, a detailed shape model would be better
-                    if ~isempty(mission.true_SC{i_SC}.true_SC_fuel_tank{i_FT}.shape_model)
-                        % If shape model exists, use it
-                        if isfield(mission.true_SC{i_SC}.true_SC_fuel_tank{i_FT}.shape_model, 'I_through_r_CM')
-                            obj.mass.propellant{i_FT}.MI_over_m = mission.true_SC{i_SC}.true_SC_fuel_tank{i_FT}.shape_model.I_through_r_CM;
-                        else
-                            % Approximate as cuboid if dimensions available
-                            obj.mass.propellant{i_FT}.MI_over_m = zeros(3,3);
-                        end
-                    else
-                        % Fallback to simple approximation - treat as point mass with small inertia
-                        obj.mass.propellant{i_FT}.MI_over_m = 1e-3 * eye(3); % [m^2]
-                    end
+                    % % Calculate approximate moment of inertia for a simple cuboid fuel mass
+                    % % This is a simplified approach - for greater accuracy, a detailed shape model would be better
+                    % if ~isempty(mission.true_SC{i_SC}.true_SC_fuel_tank{i_FT}.shape_model)
+                    %     % If shape model exists, use it
+                    %     if isfield(mission.true_SC{i_SC}.true_SC_fuel_tank{i_FT}.shape_model, 'I_through_r_CM')
+                    %         obj.mass.propellant{i_FT}.MI_over_m = mission.true_SC{i_SC}.true_SC_fuel_tank{i_FT}.shape_model.I_through_r_CM;
+                    %     else
+                    %         % Approximate as cuboid if dimensions available
+                    %         obj.mass.propellant{i_FT}.MI_over_m = zeros(3,3);
+                    %     end
+                    % else
+                    %     % Fallback to simple approximation - treat as point mass with small inertia
+                    %     obj.mass.propellant{i_FT}.MI_over_m = 1e-3 * eye(3); % [m^2]
+                    % end
                     
                     % Set flag to update total mass, COM, and MI
                     obj.flag_update_SC_body_total_mass_COM_MI = 1;

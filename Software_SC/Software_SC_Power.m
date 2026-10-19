@@ -2,7 +2,7 @@
 % Track the power status onboard the spacecraft
 
 classdef Software_SC_Power < handle
-    
+
     %% Properties
     properties
 
@@ -10,8 +10,13 @@ classdef Software_SC_Power < handle
 
         instantaneous_data_generated_per_sample % [kb] : Data generated per sample, in kilo bits (kb)
 
+        instantaneous_data_type = 1 % 0 = Data rate, 1 = Data per sample
+        % used to avoid calling isprop() every time
+        % step to determine if using instantaneous_data_rate_generated or
+        % instantaneous_data_generated_per_sample, which is slow
+
         mode_software_SC_power_selector % [string] Different power modes
-        % - 'Generic' 
+        % - 'Generic'
 
         %% [ ] Properties: Variables Computed Internally
 
@@ -23,11 +28,13 @@ classdef Software_SC_Power < handle
 
         data % Other useful data
 
+        mode_selector_name % [string] Alternative name of mode
+
         %% [ ] Properties: Storage Variables
 
         store
     end
-    
+
     %% Methods
     methods
 
@@ -42,15 +49,21 @@ classdef Software_SC_Power < handle
             obj.instantaneous_data_generated_per_sample = init_data.instantaneous_data_generated_per_sample; % [kb]
 
             obj.mode_software_SC_power_selector = init_data.mode_software_SC_power_selector;
-                        
+
             if isfield(init_data, 'data')
                 obj.data = init_data.data;
             else
                 obj.data = [];
             end
 
+            if isfield(init_data, 'mode_selector_name')
+                obj.mode_selector_name = init_data.mode_selector_name;
+            else
+                obj.mode_selector_name = mission.name;
+            end
+
             % Update Mean SoC
-            obj = func_update_mean_state_of_charge(obj, mission, i_SC);
+            obj = func_update_mean_SoC(obj, mission, i_SC);
 
             % Initialize Variables to store
             obj.store = [];
@@ -72,8 +85,8 @@ classdef Software_SC_Power < handle
         function obj = func_update_software_SC_power_store(obj, mission)
 
             if mission.storage.flag_store_this_time_step == 1
-                obj.store.flag_executive(mission.storage.k_storage,:) = obj.flag_executive; % [Boolean]                
-                obj.store.mean_state_of_charge(mission.storage.k_storage,:) = obj.mean_state_of_charge; % [percentage]                
+                obj.store.flag_executive(mission.storage.k_storage,:) = obj.flag_executive; % [Boolean]
+                obj.store.mean_state_of_charge(mission.storage.k_storage,:) = obj.mean_state_of_charge; % [percentage]
             end
 
         end
@@ -87,16 +100,14 @@ classdef Software_SC_Power < handle
 
                 switch obj.mode_software_SC_power_selector
 
-                    case 'Generic'
+                    case 'mission specific'
+                        func_name = ['func_update_mean_SoC_', obj.mode_selector_name];
+                        this_func_handle = str2func(func_name);
+                        obj = this_func_handle(obj, mission, i_SC);
 
+                    case 'Generic'
                         % Update Mean SoC
-                        obj = func_update_mean_state_of_charge(obj, mission, i_SC);
-                    
-                    case 'Nightingale'
-                        % obj = func_update_software_SC_power_Nightingale(obj,mission,i_SC);
-                        
-                        % Update Mean SoC
-                        obj = func_update_mean_state_of_charge(obj, mission, i_SC);
+                        obj = func_update_mean_SoC(obj, mission, i_SC);
                     
                     otherwise
                         error('Power mode not defined!')
@@ -115,9 +126,29 @@ classdef Software_SC_Power < handle
 
         end
 
+        %% [ ] Methods: Update Mean SoC
+        % Updates mean_state_of_charge 
 
-        
-        
+        function obj = func_update_mean_SoC(obj, mission, i_SC)
+
+            total_instantaneous_capacity = 0; % [Watts * hr]
+            total_maximum_capacity = 0; % [Watts * hr]
+
+            for i_batt = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_battery
+
+                total_instantaneous_capacity = total_instantaneous_capacity + mission.true_SC{i_SC}.true_SC_battery{i_batt}.instantaneous_capacity; % [Watts * hr]
+                total_maximum_capacity = total_maximum_capacity + mission.true_SC{i_SC}.true_SC_battery{i_batt}.maximum_capacity; % [Watts * hr]
+
+            end
+
+            obj.mean_state_of_charge = 100 * total_instantaneous_capacity / total_maximum_capacity; % [percentage]
+
+        end
+
+
+
+
+
     end
 end
 

@@ -30,7 +30,7 @@ classdef Storage < handle
 
         prev_time_visualize_SC_attitude_orbit_during_sim % [sec]
 
-        % Real-time plotting variables        
+        % Real-time plotting variables
         realtime_plot_handle % Handle to the real-time plot figure
         realtime_plot_last_update % [sec] : Time of last real-time plot update
         realtime_plot_update_interval % [sec] : Minimum time between real-time plot updates
@@ -38,8 +38,14 @@ classdef Storage < handle
 
 
         % Initialize real-time visualization settings
-        last_viz_update_time % Time of last visualization update
-        
+        last_viz_update_time % Time of last visualization update    
+
+        mode_storage_viz_selector % [string] Select which visualization to run
+
+        mode_selector_name % [string] Alternative name of visualization mode
+
+        num_viz_SC % [integer] Max number of spacecarft to plot (for large constellations)
+
 
         %% [ ] Properties: Other Useful Variables
 
@@ -55,11 +61,25 @@ classdef Storage < handle
         % - flag_save_video % [Boolean] 1: Save them (takes a lot more time), 0: Doesnt save them
         % - quiver_auto_scale_factor % [float] : scale factor used for quiver3
 
+        report_parameters % Parameters used for report writing
+        % - flag_write_report % [Boolean] : 1 = Enable report writing
+        % - report_handle % report handle
+        % - report_authors % Authors of the report
+        % - report_plot_font_size % Font size of all plots used in report
+        % - report_plot_start_k % Starting index of plotting for report
+        % - report_plot_end_k % Ending index of plotting for report        
+        % - Excel_Variable_Names % Variable Names in Excel Output
+        % - Excel_cellData % Data in Excel Output
+
         output_folder % [Boolean] Folder to store all outputs
 
         flag_stop_sim % flag to stop simulation
 
         last_mode % Cell array to store the last mode of each spacecraft
+
+        data % [struct] Other useful data
+
+
 
     end
 
@@ -134,7 +154,7 @@ classdef Storage < handle
             else
                 obj.plot_parameters.flag_save_video = 0; % [Boolean] 1: Save them (takes a lot more time), 0: Doesnt save them
             end
-            
+
             if isfield(init_data, 'wait_time_realtime_plotting')
                 obj.viz_update_interval = init_data.wait_time_realtime_plotting; % [sec]
             else
@@ -142,7 +162,7 @@ classdef Storage < handle
             end
             obj.prev_time_visualize_SC_attitude_orbit_during_sim = -inf;
 
-            
+
             % Initialize real-time plotting variables
             if isfield(init_data, 'flag_realtime_plotting')
                 obj.flag_realtime_plotting = init_data.flag_realtime_plotting;
@@ -155,6 +175,44 @@ classdef Storage < handle
             else
                 obj.plot_parameters.quiver_auto_scale_factor = 0.1;
             end
+
+            if isfield(init_data, 'flag_write_report')
+                obj.report_parameters.flag_write_report = init_data.flag_write_report;
+            else
+                obj.report_parameters.flag_write_report = 0;
+            end
+
+            if isfield(init_data, 'report_authors')
+                obj.report_parameters.report_authors = init_data.report_authors;
+            else
+                obj.report_parameters.report_authors = 'Anonymous';
+            end
+
+            if isfield(init_data, 'data')
+                obj.data = init_data.data;
+            else
+                obj.data = [];
+            end
+
+            if isfield(init_data, 'mode_storage_viz_selector')
+                obj.mode_storage_viz_selector = init_data.mode_storage_viz_selector;
+            else
+                obj.mode_storage_viz_selector = 'generic';
+            end
+            
+
+            if isfield(init_data, 'mode_selector_name')
+                obj.mode_selector_name = init_data.mode_selector_name;
+            else
+                obj.mode_selector_name = mission.name;
+            end
+
+            if isfield(init_data, 'num_viz_SC')
+                obj.num_viz_SC = init_data.num_viz_SC;
+            else
+                obj.num_viz_SC = mission.num_SC;
+            end
+            
 
             % Output Folder
             obj.output_folder = ['../Output/', mission.name, '_', char(datetime("now", "Format", "yyyy-MM-dd-HH'h'mm'm'ss's'")), ' (SimTime = ', char(string(mission.true_time.t_final/86400)), ' days)/'];
@@ -224,7 +282,7 @@ classdef Storage < handle
         % Update the real-time performance plot
 
         function obj = func_update_realtime_plot(obj, mission)
-           if obj.flag_realtime_plotting
+            if obj.flag_realtime_plotting
                 % Initialize last_mode property if it doesn't exist
                 if ~isfield(obj, 'last_mode')
                     obj.last_mode = {};
@@ -232,7 +290,7 @@ classdef Storage < handle
                         obj.last_mode{i_SC} = mission.true_SC{i_SC}.software_SC_executive.this_sc_mode;
                     end
                 end
-                
+
                 % Check for mode changes in any spacecraft
                 mode_changed = false;
                 for i_SC = 1:mission.num_SC
@@ -242,38 +300,139 @@ classdef Storage < handle
                         obj.last_mode{i_SC} = current_mode;
                     end
                 end
-                
+
                 % Update visualization if time interval has elapsed OR mode has changed
                 if (mission.true_time.time - obj.last_viz_update_time >= obj.viz_update_interval) || mode_changed
 
                     obj.last_viz_update_time = mission.true_time.time;
 
-                    switch mission.name
+                    switch obj.mode_storage_viz_selector
 
-                        case 'Nightingale'
-                            func_visualize_SC_Nightingale(obj, mission, true);
-
-                        case 'IBEAM'
-                            func_visualize_SC_IBEAM(obj, mission, true);
-
-                        case 'NISAR'
-                            func_visualize_SC_NISAR(mission.storage, mission, true);
-
-                        case 'NISAR 2SC'
-                            func_visualize_SC_NISAR_2SC(mission.storage, mission, true);
-
-                        case 'GoldenDome'
-                            func_visualize_SC_GoldenDome(mission.storage, mission, true);
-
-                        otherwise
-                            % Update visualization with attitude rotation and store the time
+                        case 'mission specific'
+                            func_name = ['func_visualize_SC_', obj.mode_selector_name];
+                            this_func_handle = str2func(func_name);
+                            obj = this_func_handle(obj, mission, true);                        
+                                                                                                                        
+                        otherwise                            
+                            % Generic : Update visualization with attitude rotation and store the time
                             func_visualize_SC_v2(obj, mission, true);
                     end
-                    
-                    
+
+
                     % Force display update without blocking execution
                     drawnow limitrate;
                 end
+            end
+        end
+
+        %% [ ] Methods: Visualize Simulation Data
+        % Visualize all simulation data
+
+        function obj = func_initialize_report(obj, mission)
+
+            % Write Report
+            if obj.report_parameters.flag_write_report == 1
+
+                % Save Plots
+                obj.plot_parameters.flag_save_plots = 1;
+
+                % Report Parameters
+                obj.report_parameters.report_plot_font_size = 10;
+                obj.report_parameters.Excel_Variable_Names = [];
+                obj.report_parameters.Excel_cellData = [];
+
+                import mlreportgen.report.*
+                import mlreportgen.dom.*
+
+                obj.report_parameters.report_handle = Report([obj.output_folder, mission.name,'_Report'],'pdf');
+
+
+
+                % Title Page
+                tp = TitlePage;
+                tp.Title = mission.name;
+                tp.Subtitle = 'MuSCAT Simulation Results';
+                tp.Author = obj.report_parameters.report_authors;
+                append(obj.report_parameters.report_handle,tp);
+
+                append(obj.report_parameters.report_handle,TableOfContents);
+
+                ch = Chapter;
+                ch.Title = 'Initialize: Mission, Time and Storage';
+
+
+                % Mission Details
+                sec = Section;
+                sec.Title = 'Mission (Struct)';
+
+                para = Paragraph(['Mission Name = ',mission.name]);
+                append(sec,para)
+
+                para = Paragraph(['Number of Spacecrafts = ',num2str(mission.num_SC)]);
+                append(sec,para)
+
+                para = Paragraph(['Number of Targets = ',num2str(mission.num_target)]);
+                append(sec,para)
+
+                para = Paragraph(['Mission Frame = ',mission.frame]);
+                append(sec,para)
+                para = Paragraph('- "Absolute" means Sun-centered J2000 frame. "Relative" means Target-centered J2000 frame.');
+                append(sec,para)
+
+                append(ch,sec)
+
+                % Time Details
+                sec = Section;
+                sec.Title = 'Time (Class: True_Time)';
+
+                para = Paragraph(['Simulation Start Time = ',num2str(mission.true_time.t_initial),' sec']);
+                append(sec,para)
+
+                para = Paragraph(['Simulation End Time = ',num2str(mission.true_time.t_final),' sec']);
+                append(sec,para)
+
+                para = Paragraph(['Simulation Time Step = ',num2str(mission.true_time.time_step),' sec']);
+                append(sec,para)
+
+                if mission.true_time.time_step_attitude == mission.true_time.time_step
+                    para = Paragraph('Simulation Time Step (for ADL) = Simulation Time Step');
+                else
+                    para = Paragraph(['Simulation Time Step (for ADL) = ',num2str(mission.true_time.time_step_attitude),' sec']);
+                end
+                append(sec,para)
+                para = Paragraph('- "ADL" means Attitude Dynamics Loop');
+                append(sec,para)
+
+                para = Paragraph(['Simulation Start Date and Time = ',mission.true_time.t_initial_date_string]);
+                append(sec,para)
+
+                append(ch,sec)
+
+                % Storage Details
+                sec = Section;
+                sec.Title = 'Storage (Class: Storage)';
+
+                if obj.time_step_storage == mission.true_time.time_step
+                    para = Paragraph('Storage Time Step = Simulation Time Step');
+                else
+                    para = Paragraph(['Storage Time Step = ',num2str(obj.time_step_storage),' sec']);
+                end
+                append(sec,para)
+
+                if obj.time_step_storage_attitude == mission.true_time.time_step_attitude
+                    para = Paragraph('Storage Time Step (for ADL) = Simulation Time Step (for ADL)');
+                else
+                    para = Paragraph(['Storage Time Step (for ADL) = ',num2str(obj.time_step_storage_attitude),' sec']);
+                end
+                append(sec,para)
+
+                para = Paragraph(['Storage Output Folder = ',obj.output_folder]);
+                append(sec,para)
+
+                append(ch,sec)
+
+                append(obj.report_parameters.report_handle,ch);
+
             end
         end
 
@@ -318,24 +477,30 @@ classdef Storage < handle
                     end
                 end
             end
-            
+
 
             % Process one spacecraft at a time to limit memory usage
-            for i_SC = 1:1:min(mission.num_SC, 5)
+            % Basic plots for all spacecraft (minimal memory use)
+            for i_SC = 1:1:min(mission.num_SC, obj.num_viz_SC)
 
                 close all
 
-                % Basic plots for all spacecraft (minimal memory use)
-                % Orbit Vizualization (shared plot)
-
                 if i_SC == 1
+                    % Initialize Report
+                    fprintf('Initialize Report...\n');
+                    obj = func_initialize_report(obj, mission);
+
                     % Shared for all spacecraft
                     fprintf('Plotting Mission Dashboard...\n');
-                    func_visualize_SC_v2(obj, mission, true);
+                    func_visualize_SC_v2(obj, mission, false);
                     drawnow limitrate;
 
-                    fprintf('Plotting orbit visualization...\n');
+                    fprintf('Plotting Orbit Visualization...\n');
                     func_plot_orbit_visualization(mission);
+                    drawnow limitrate;
+
+                    fprintf('Plotting GS Telecom (Recieved) visualization...\n');
+                    func_plot_GS_data_received(mission);
                     drawnow limitrate;
                 end
 
@@ -357,7 +522,7 @@ classdef Storage < handle
                 drawnow limitrate;
 
                 fprintf('Plotting SC%d power visualization...\n', i_SC);
-                func_plot_power_visualization_v2(mission, i_SC);
+                func_plot_power_visualization(mission, i_SC);
                 drawnow limitrate;
 
                 fprintf('Plotting SC%d individual power consumption...\n', i_SC);
@@ -372,7 +537,7 @@ classdef Storage < handle
                 func_plot_individual_data_usage(mission, i_SC);
                 drawnow limitrate;
 
-                fprintf('Plotting software executive visualization...\n');
+                fprintf('Plotting SC%d ConOps visualization...\n', i_SC);
                 func_plot_software_executive_visualization(mission, i_SC);
                 drawnow limitrate;
 
@@ -403,7 +568,30 @@ classdef Storage < handle
                     func_visualize_SC_camera_coverage_during_sim(mission.true_SC{i_SC}.true_SC_camera{i_HW}, mission, i_SC, i_HW);
                     drawnow limitrate;
                 end
-                
+
+                % Telescope Observation Viz
+                for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_telescope
+                    fprintf('Plotting SC%d telescope %d coverage...\n', i_SC, i_HW);
+                    func_visualize_SC_telescope_observations_during_sim(mission.true_SC{i_SC}.true_SC_telescope{i_HW}, mission, i_SC, i_HW);
+                    drawnow limitrate;
+                end
+
+            end
+
+            % Write Report
+            if obj.report_parameters.flag_write_report == 1
+
+                % Close Report
+                close(obj.report_parameters.report_handle)
+                rptview(obj.report_parameters.report_handle)
+
+                % Write Excel File
+                % Combine headers and data into a single cell array
+                dataWithHeaders = [obj.report_parameters.Excel_Variable_Names; obj.report_parameters.Excel_cellData];
+
+                % Write cell array to Excel file
+                writecell(dataWithHeaders, [mission.storage.output_folder, mission.name,'_output_with_headers.xlsx']);
+
             end
         end
 

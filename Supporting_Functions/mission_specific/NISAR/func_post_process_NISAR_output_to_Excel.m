@@ -36,10 +36,10 @@ for j=1:1:length(Variable_Names)
                 cellData{i,j} = mission.true_SC{i_SC}.software_SC_executive.store.altitude(i);
 
             case 'Earth in View?'
-                cellData{i,j} = mission.true_SC{i_SC}.true_SC_navigation.store.flag_visible_Earth(i);
+                cellData{i,j} = mission.true_SC{i_SC}.true_SC_orbit_propagation.store.flag_visible_Earth(i);
 
             case 'Sun in View?'
-                cellData{i,j} = mission.true_SC{i_SC}.true_SC_navigation.store.flag_visible_Sun(i);
+                cellData{i,j} = mission.true_SC{i_SC}.true_SC_orbit_propagation.store.flag_visible_Sun(i);
 
             case 'Orbit Plane'
                 cellData{i,j} = mission.true_SC{i_SC}.software_SC_executive.store.orbit_plane(i);
@@ -114,7 +114,7 @@ for j=1:1:length(Variable_Names)
             
 
             case 'SC Position [km] J2000-frame'                
-                cellData{i,j} = mission.true_SC{i_SC}.true_SC_navigation.store.position(i,:); % [km]
+                cellData{i,j} = mission.true_SC{i_SC}.true_SC_orbit_propagation.store.position(i,:); % [km]
 
             case 'Earth Position [km] J2000-frame'
                 cellData{i,j} = mission.true_target{1}.store.position(i,:); % [km]
@@ -125,7 +125,7 @@ for j=1:1:length(Variable_Names)
             case 'Sun-Earth-SC Angle [deg]'
                 Sun_pos = mission.true_solar_system.store.SS_body{mission.true_solar_system.index_Sun}.position(i,:); % [km]
                 Earth_pos = mission.true_target{1}.store.position(i,:); % [km]
-                SC_pos = mission.true_SC{i_SC}.true_SC_navigation.store.position(i,:); % [km]
+                SC_pos = mission.true_SC{i_SC}.true_SC_orbit_propagation.store.position(i,:); % [km]
 
                 Sun_Earth_SC_Angle = func_angle_between_vectors( func_normalize_vec(Sun_pos - Earth_pos)', func_normalize_vec(SC_pos - Earth_pos)' ); % [rad]
                 cellData{i,j} = rad2deg(Sun_Earth_SC_Angle); %[deg]

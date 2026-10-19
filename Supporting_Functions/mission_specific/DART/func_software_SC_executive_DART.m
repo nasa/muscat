@@ -24,7 +24,7 @@ mission.true_SC{i_SC}.software_SC_control_attitude.flag_executive = 1;
 %
 %     % Disable orbit control and planned maneuvers
 %     mission.true_SC{i_SC}.software_SC_control_orbit.flag_executive = 0;
-%     mission.true_SC{i_SC}.software_SC_control_orbit.desired_DeltaV_needs_to_be_executed = false;
+%     mission.true_SC{i_SC}.software_SC_control_orbit.data.desired_DeltaV_needs_to_be_executed = false;
 %     return;
 % end
 
@@ -71,8 +71,8 @@ transmission_complete = isfield(mission.true_SC{i_SC}.software_SC_communication.
 % 4. No orbit maneuver is in progress
 if ((time_since_last_comm >= 3600 * 5) || ...
         (already_communicating && ~transmission_complete)) && ...
-        (mission.true_SC{i_SC}.true_SC_navigation.flag_visible_Earth) && ...
-        ~mission.true_SC{i_SC}.software_SC_control_orbit.desired_DeltaV_needs_to_be_executed
+        (mission.true_SC{i_SC}.true_SC_orbit_propagation.flag_visible_Earth) && ...
+        ~mission.true_SC{i_SC}.software_SC_control_orbit.data.desired_DeltaV_needs_to_be_executed
 
     obj.this_sc_mode = 'DTE Comm';
 
@@ -86,12 +86,11 @@ if ((time_since_last_comm >= 3600 * 5) || ...
 end
 
 %% 4. Collision Check & Orbit Control
-mission.true_SC{i_SC}.software_SC_control_orbit = mission.true_SC{i_SC}.software_SC_control_orbit;
-time_since_last_orbit_check = mission.true_time.time - mission.true_SC{i_SC}.software_SC_control_orbit.last_time_control;
+time_since_last_orbit_check = mission.true_time.time - mission.true_SC{i_SC}.software_SC_control_orbit.data.last_time_control;
 
 if (time_since_last_orbit_check >= mission.true_SC{i_SC}.software_SC_control_orbit.max_time_before_control) && ...
-        ~mission.true_SC{i_SC}.software_SC_control_orbit.desired_DeltaV_needs_to_be_executed  && ...
-        ~mission.true_SC{i_SC}.true_SC_navigation.flag_SC_crashed
+        ~mission.true_SC{i_SC}.software_SC_control_orbit.data.desired_DeltaV_needs_to_be_executed  && ...
+        ~mission.true_SC{i_SC}.true_SC_orbit_propagation.flag_SC_crashed
 
     % Activate orbit control system to compute necessary corrections
     mission.true_SC{i_SC}.software_SC_control_orbit.flag_executive = 1;
@@ -99,9 +98,9 @@ if (time_since_last_orbit_check >= mission.true_SC{i_SC}.software_SC_control_orb
 end
 
 %% 5. Execute DeltaV to Ensure Collision
-if mission.true_SC{i_SC}.software_SC_control_orbit.desired_DeltaV_needs_to_be_executed && ...
-        mission.true_SC{i_SC}.software_SC_control_orbit.desired_DeltaV_computed && ...
-        ~mission.true_SC{i_SC}.true_SC_navigation.flag_SC_crashed
+if mission.true_SC{i_SC}.software_SC_control_orbit.data.desired_DeltaV_needs_to_be_executed && ...
+        mission.true_SC{i_SC}.software_SC_control_orbit.data.desired_DeltaV_computed && ...
+        ~mission.true_SC{i_SC}.true_SC_orbit_propagation.flag_SC_crashed
 
     % Keep turning the spacecraft to the right orientation
     obj.this_sc_mode = 'Point Thruster along DeltaV direction';

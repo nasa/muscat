@@ -8,6 +8,8 @@ classdef True_GS_Radio_Antenna < handle
 
         %% [ ] Properties: Initialized Variables
 
+        name % [string] 'GS Radio Antenna i' (Optional)        
+
         antenna_type % [string]
         % - 'Dipole'
         % - 'High Gain'
@@ -32,8 +34,6 @@ classdef True_GS_Radio_Antenna < handle
 
 
         %% [ ] Properties: Variables Computed Internally
-
-        name % [string] 'GS Radio Antenna i'
 
         health % [integer] Health of sensor/actuator
         % - 0. Switched off
@@ -152,9 +152,9 @@ classdef True_GS_Radio_Antenna < handle
         end
 
         %% [ ] Methods: Main
-        % Update Camera
+        % Update GS Radio Antenna
 
-        function obj = func_main_true_GS_radio_antenna(obj, mission)
+        function obj = func_main_true_GS_radio_antenna(obj, mission, i_HW)
 
             if (obj.flag_executive == 1) && (obj.health == 1)
                 % TX or RX Data

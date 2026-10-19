@@ -2,7 +2,7 @@
 
 function obj = func_command_DeltaV(obj, mission, i_SC)
 % Initialize desired control thrust to zero
-obj.desired_control_thrust = 0;
+obj.data.desired_control_thrust = 0;
 
 % Get spacecraft parameters
 sc_mass = mission.true_SC{i_SC}.true_SC_body.total_mass;
@@ -22,7 +22,7 @@ if isempty(healthy_thrusters)
 end
 
 % Check execution conditions
-if (mission.true_time.time < obj.time_DeltaV) || obj.desired_DeltaV_achieved || obj.flag_insufficient_fuel
+if (mission.true_time.time < obj.data.time_DeltaV) || obj.data.desired_DeltaV_achieved || obj.data.flag_insufficient_fuel
     return;
 end
 
@@ -41,14 +41,14 @@ if ~all_thrusters_ready
 end
 
 % Calculate remaining Delta-V
-remaining_DeltaV = obj.desired_control_DeltaV - obj.total_DeltaV_executed;
+remaining_DeltaV = obj.data.desired_control_DeltaV - obj.data.total_DeltaV_executed;
 remaining_magnitude = norm(remaining_DeltaV);
 
 if remaining_magnitude > 0
     % Record start time if this is the first thrust of a maneuver
-    if obj.maneuver_start_time == 0
-        obj.maneuver_start_time = mission.true_time.time;
-        obj.thruster_fired_successfully = false;
+    if obj.data.maneuver_start_time == 0
+        obj.data.maneuver_start_time = mission.true_time.time;
+        obj.data.thruster_fired_successfully = false;
         disp(['Starting maneuver execution at time ', num2str(mission.true_time.time), ' s']);
     end
 
@@ -60,14 +60,14 @@ if remaining_magnitude > 0
 
     % Get current attitude matrix
     current_attitude = mission.true_SC{i_SC}.true_SC_adc.attitude;
-    R = quaternionToRotationMatrix(current_attitude);
+    R_BF_IF = quaternionToRotationMatrix(current_attitude); % Inertial-to-body
 
     % Rotate thruster directions to inertial frame
     thruster_body_directions = zeros(3, length(healthy_thrusters));
     for i = 1:length(healthy_thrusters)
         thruster_body_directions(:, i) = mission.true_SC{i_SC}.true_SC_chemical_thruster{healthy_thrusters(i)}.orientation';
     end
-    orientations = R * thruster_body_directions;
+    orientations = (R_BF_IF') * thruster_body_directions;
     A = orientations;
 
     % Calculate maximum available thrust in desired direction
@@ -100,10 +100,10 @@ if remaining_magnitude > 0
         mission.true_SC{i_SC}.true_SC_chemical_thruster{healthy_thrusters(i)}.flag_executive = 1;
 
         % Save that we commanded a thrust (needed for completion checks)
-        obj.desired_control_thrust = obj.desired_control_thrust + thrust_vector(i);
+        obj.data.desired_control_thrust = obj.data.desired_control_thrust + thrust_vector(i);
     end
 
     % Note: We no longer calculate applied DeltaV here - that's now done in the thruster itself
-    % which will directly update obj.total_DeltaV_executed
+    % which will directly update obj.data.total_DeltaV_executed
 end
 end

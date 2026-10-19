@@ -15,8 +15,8 @@ for axis = 1:3
     pos_torque = 0;
     neg_torque = 0;
 
-    for i = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_micro_thruster
-        thruster = mission.true_SC{i_SC}.true_SC_micro_thruster{i};
+    for i = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_RCS_thruster
+        thruster = mission.true_SC{i_SC}.true_SC_RCS_thruster{i};
 
         % Skip unhealthy thrusters
         if ~thruster.health

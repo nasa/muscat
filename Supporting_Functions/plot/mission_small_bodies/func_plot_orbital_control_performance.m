@@ -11,7 +11,7 @@ function func_plot_orbital_control_performance(mission, i_SC)
     % Check hardware/software existence
     has_chemical_thrusters = mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemical_thruster > 0;
     has_ep_thrusters = mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_ep_thruster > 0;
-    has_micro_thrusters = mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_micro_thruster > 0;
+    has_RCS_thrusters = mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_RCS_thruster > 0;
     has_orbit_control = isfield(mission.true_SC{i_SC}, 'software_SC_control_orbit');
     has_fuel_tanks = mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_fuel_tank > 0;
     
@@ -386,7 +386,7 @@ function func_plot_orbital_control_performance(mission, i_SC)
     end
     
     %% Row 2: Orbit Control and DeltaV
-    if has_orbit_control
+    if 1==2 %has_orbit_control
         orbit_control = mission.true_SC{i_SC}.software_SC_control_orbit;
         time_vec = mission.true_time.store.time(1:kd);
         
@@ -567,7 +567,7 @@ function func_plot_orbital_control_performance(mission, i_SC)
         
         % Calculate total consumption by micro thrusters
         micro_consumption = zeros(kd, 1);
-        if has_micro_thrusters
+        if has_RCS_thrusters
             % We need to handle the different time storage indexing for attitude thrusters
             kd_attitude = min(mission.storage.k_storage_attitude, size(mission.true_time.store.time_attitude, 1));
             if kd_attitude > 0
@@ -577,8 +577,8 @@ function func_plot_orbital_control_performance(mission, i_SC)
                 % First collect micro thruster consumption at attitude storage rate
                 micro_consumption_raw = zeros(kd_attitude, 1);
                 
-                for i_MT = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_micro_thruster
-                    thruster = mission.true_SC{i_SC}.true_SC_micro_thruster{i_MT};
+                for i_MT = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_RCS_thruster
+                    thruster = mission.true_SC{i_SC}.true_SC_RCS_thruster{i_MT};
                     if isfield(thruster.store, 'total_fuel_consumed')
                         micro_consumption_raw = micro_consumption_raw + thruster.store.total_fuel_consumed(1:kd_attitude);
                     end

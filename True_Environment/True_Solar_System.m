@@ -17,9 +17,9 @@ classdef True_Solar_System < handle
         % - radius [km]
         % - mu [km^3 sec^-2]
         % - mass [kg]
-        % - position [km] wrt Solar System Barycenter centered J2000               
-        % - velocity [km/sec] wrt Solar System Barycenter centered J2000 
-        % - position_array % [km] Position array wrt Solar System Barycenter centered J2000, corresponding to time array in mission.true_time.time_position_array        
+        % - position [km] wrt SUN centered J2000               
+        % - velocity [km/sec] wrt SUN centered J2000 
+        % - position_array % [km] Position array wrt SUN centered J2000, corresponding to time array in mission.true_time.time_position_array        
         % - rgb_color [string] Used for plotting
 
         solar_constant_AU % [W/m^2]
@@ -30,6 +30,7 @@ classdef True_Solar_System < handle
 
         index_Sun % [integer] : Index of Sun
         index_Earth % [integer] : Index of Earth
+        index_Moon % [integer] : Index of Moon
 
         %% [ ] Properties: Storage Variables
 
@@ -53,6 +54,7 @@ classdef True_Solar_System < handle
 
             obj.index_Sun = 0;
             obj.index_Earth = 0;
+            obj.index_Moon = 0;
             
             obj.num_SS_body = length(init_data.SS_body_names);
             obj.SS_body = [];
@@ -88,6 +90,10 @@ classdef True_Solar_System < handle
 
                 if strcmp(obj.SS_body{i}.name, 'Earth')
                     obj.index_Earth = i;
+                end
+
+                if strcmp(obj.SS_body{i}.name, 'Moon')
+                    obj.index_Moon = i;
                 end
 
             end
@@ -272,12 +278,12 @@ classdef True_Solar_System < handle
 
             for i = 1:1:obj.num_SS_body
 
-                body_pos_vel_this_time = cspice_spkezr(obj.SS_body{i}.spice_name, mission.true_time.date,'J2000','NONE','SOLAR SYSTEM BARYCENTER');
+                body_pos_vel_this_time = cspice_spkezr(obj.SS_body{i}.spice_name, mission.true_time.date,'J2000','NONE','SUN');
 
                 obj.SS_body{i}.position = body_pos_vel_this_time(1:3,1)'; % [km]
                 obj.SS_body{i}.velocity = body_pos_vel_this_time(4:6,1)'; % [km]
 
-                body_pos_vel_array = (cspice_spkezr(obj.SS_body{i}.spice_name, mission.true_time.prev_date + mission.true_time.time_position_array' ,'J2000','NONE','SOLAR SYSTEM BARYCENTER'))';
+                body_pos_vel_array = (cspice_spkezr(obj.SS_body{i}.spice_name, mission.true_time.prev_date + mission.true_time.time_position_array' ,'J2000','NONE','SUN'))';
                 obj.SS_body{i}.position_array = body_pos_vel_array(:,1:3);
 
             end
@@ -301,7 +307,7 @@ classdef True_Solar_System < handle
             this_data.name = 'Sun';
             this_data.spice_name = '10'; % [string] : Body's SPICE Name
             this_data.radius = 6.95700e5; % [km]
-            this_data.mu = 1.32712440018e11; % [km^3 sec^-2]
+            this_data.mu = 1.327124400412794e11; % [km^3 sec^-2] From Shyam
             this_data.mass = 1.9885e30; % [kg]
             this_data.rgb_color = 'Gold'; % [string]
             k = k + 1;
@@ -312,7 +318,7 @@ classdef True_Solar_System < handle
             this_data.name = 'Mercury';
             this_data.spice_name = '199'; % [string] : Body's SPICE Name
             this_data.radius = 2.4397e3; % [km] https://en.wikipedia.org/wiki/Mercury_(planet)
-            this_data.mu = 2.2032e4; % [km^3 sec^-2] https://en.wikipedia.org/wiki/Standard_gravitational_parameter
+            this_data.mu = 2.203186855140000e4; % [km^3 sec^-2] from Shyam
             this_data.mass = 3.3011e23; % [kg] 
             this_data.rgb_color = 'Silver'; % [string]
             k = k + 1;
@@ -323,7 +329,7 @@ classdef True_Solar_System < handle
             this_data.name = 'Venus';
             this_data.spice_name = '299'; % [string] : Body's SPICE Name
             this_data.radius = 6.0518e3; % [km] https://en.wikipedia.org/wiki/Venus 
-            this_data.mu = 3.24859e5; % [km^3 sec^-2] https://en.wikipedia.org/wiki/Standard_gravitational_parameter
+            this_data.mu = 3.248585920000000e5; % [km^3 sec^-2] from Shyam
             this_data.mass = 4.8675e24; % [kg] 
             this_data.rgb_color = 'Yellow'; % [string]
             k = k + 1;
@@ -334,7 +340,7 @@ classdef True_Solar_System < handle
             this_data.name = 'Earth';
             this_data.spice_name = '399'; % [string] : Body's SPICE Name
             this_data.radius = 6.371e3; % [km]
-            this_data.mu = 3.986004418e5; % [km^3 sec^-2] https://en.wikipedia.org/wiki/Standard_gravitational_parameter
+            this_data.mu = 3.986004355070227e5; % [km^3 sec^-2] from Shyam
             this_data.mass = 5.9722e24; % [kg]
             this_data.rgb_color = 'Navy'; % [string]
             k = k + 1;
@@ -345,7 +351,7 @@ classdef True_Solar_System < handle
             this_data.name = 'Moon';
             this_data.spice_name = '301'; % [string] : Body's SPICE Name           
             this_data.radius = 1.7374e3; % [km]
-            this_data.mu = 4.9048695e3; % [km^3 sec^-2] https://en.wikipedia.org/wiki/Standard_gravitational_parameter
+            this_data.mu = 4.902800118457550e3; % [km^3 sec^-2] from Shyam
             this_data.mass = 7.342e22; % [kg]
             this_data.rgb_color = 'Silver'; % [string]
             k = k + 1;
@@ -362,6 +368,17 @@ classdef True_Solar_System < handle
             k = k + 1;
             all_SS_body_data{k} = this_data;
 
+            % Mars Barycenter's Data
+            this_data = [];
+            this_data.name = 'Mars Barycenter';
+            this_data.spice_name = '4'; % [string] : Body's SPICE Name           
+            this_data.radius = 3.3895e3; % [km] https://en.wikipedia.org/wiki/Mars
+            this_data.mu = 4.282837581575610e4; % [km^3 sec^-2] from Shyam
+            this_data.mass = 6.4171e23; % [kg]
+            this_data.rgb_color = 'DarkRed'; % [string]
+            k = k + 1;
+            all_SS_body_data{k} = this_data;
+
             % Jupiter's Data
             this_data = [];
             this_data.name = 'Jupiter';
@@ -373,12 +390,34 @@ classdef True_Solar_System < handle
             k = k + 1;
             all_SS_body_data{k} = this_data;
 
+            % Jupiter Barycenter's Data
+            this_data = [];
+            this_data.name = 'Jupiter Barycenter';
+            this_data.spice_name = '5'; % [string] : Body's SPICE Name           
+            this_data.radius = 6.9911e4; % [km] https://en.wikipedia.org/wiki/Jupiter
+            this_data.mu = 1.267127641000000e8; % [km^3 sec^-2] from Shyam
+            this_data.mass = 1.8982e27; % [kg]
+            this_data.rgb_color = 'Orange'; % [string]
+            k = k + 1;
+            all_SS_body_data{k} = this_data;
+
             % Saturn's Data
             this_data = [];
             this_data.name = 'Saturn';
             this_data.spice_name = '699'; % [string] : Body's SPICE Name           
             this_data.radius = 5.8232e4; % [km] https://en.wikipedia.org/wiki/Saturn
             this_data.mu = 3.7931187e7; % [km^3 sec^-2] https://en.wikipedia.org/wiki/Standard_gravitational_parameter
+            this_data.mass = 5.6834e26; % [kg]
+            this_data.rgb_color = 'Goldenrod'; % [string]
+            k = k + 1;
+            all_SS_body_data{k} = this_data;
+
+            % Saturn Barycenter's Data
+            this_data = [];
+            this_data.name = 'Saturn Barycenter';
+            this_data.spice_name = '6'; % [string] : Body's SPICE Name           
+            this_data.radius = 5.8232e4; % [km] https://en.wikipedia.org/wiki/Saturn
+            this_data.mu = 3.794058484180000e7; % [km^3 sec^-2] from Shyam
             this_data.mass = 5.6834e26; % [kg]
             this_data.rgb_color = 'Goldenrod'; % [string]
             k = k + 1;
@@ -505,6 +544,17 @@ classdef True_Solar_System < handle
             k = k + 1;
             all_SS_body_data{k} = this_data;
 
+            % Uranus Barycenter's Data
+            this_data = [];
+            this_data.name = 'Uranus Barycenter';
+            this_data.spice_name = '7'; % [string] : Body's SPICE Name           
+            this_data.radius = 2.5362e4; % [km] https://en.wikipedia.org/wiki/Uranus
+            this_data.mu = 5.794556399999999e6; % [km^3 sec^-2] from Shyam
+            this_data.mass = 8.6810e25; % [kg]
+            this_data.rgb_color = 'Green'; % [string]
+            k = k + 1;
+            all_SS_body_data{k} = this_data;
+
             % Neptune's Data
             this_data = [];
             this_data.name = 'Neptune';
@@ -513,6 +563,28 @@ classdef True_Solar_System < handle
             this_data.mu = 6.836529e6; % [km^3 sec^-2] https://en.wikipedia.org/wiki/Standard_gravitational_parameter
             this_data.mass = 1.02409e26; % [kg]
             this_data.rgb_color = 'Green'; % [string]
+            k = k + 1;
+            all_SS_body_data{k} = this_data;
+
+            % Neptune Barycenter's Data
+            this_data = [];
+            this_data.name = 'Neptune Barycenter';
+            this_data.spice_name = '8'; % [string] : Body's SPICE Name           
+            this_data.radius = 2.4622e4; % [km] https://en.wikipedia.org/wiki/Neptune
+            this_data.mu = 6.836527100580399e6; % [km^3 sec^-2] from Shyam
+            this_data.mass = 1.02409e26; % [kg]
+            this_data.rgb_color = 'Green'; % [string]
+            k = k + 1;
+            all_SS_body_data{k} = this_data;
+
+            % Pluto Barycenter's Data
+            this_data = [];
+            this_data.name = 'Pluto Barycenter';
+            this_data.spice_name = '9'; % [string] : Body's SPICE Name           
+            this_data.radius = 1188.3; % [km] https://en.wikipedia.org/wiki/Pluto
+            this_data.mu = 9.755000000000000e2; % [km^3 sec^-2]from Shyam
+            this_data.mass = 1.3025e22; % [kg]
+            this_data.rgb_color = 'RosyBrown'; % [string]
             k = k + 1;
             all_SS_body_data{k} = this_data;
 

@@ -21,7 +21,7 @@ for k = 1:1:mission.true_time.num_time_steps
         func_main_true_target(mission.true_target{i_target}, mission);        
     end
 
-    %% For Each Spacecraft
+    %% For Each Spacecraft in Position Dynamics Loop
     for i_SC = 1:1:mission.num_SC
 
         %% [ ] Update Solar Radiation Pressure
@@ -34,9 +34,9 @@ for k = 1:1:mission.true_time.num_time_steps
         func_main_true_SC_body(mission.true_SC{i_SC}.true_SC_body, mission, i_SC);
 
         %% [ ] Update SC Position Velocity
-        func_main_true_SC_navigation(mission.true_SC{i_SC}.true_SC_navigation, mission, i_SC);        
+        func_main_true_SC_orbit_propagation(mission.true_SC{i_SC}.true_SC_orbit_propagation, mission, i_SC);        
     
-        %% [ ] Update SC Onbaord Clock
+        %% [ ] Update SC Onboard Clock
         for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_onboard_clock
             func_main_true_SC_onboard_clock(mission.true_SC{i_SC}.true_SC_onboard_clock{i_HW}, mission, i_SC);
         end
@@ -46,9 +46,16 @@ for k = 1:1:mission.true_time.num_time_steps
             func_main_true_SC_onboard_computer(mission.true_SC{i_SC}.true_SC_onboard_computer{i_HW}, mission, i_SC);
         end
 
+    end
+
+    %% For Each Spacecraft's Executive 
+    for i_SC = 1:1:mission.num_SC
+
         %% [ ] Update Software SC Executive
         func_main_software_SC_executive(mission.true_SC{i_SC}.software_SC_executive, mission, i_SC);
-        
+
+        %% [ ] Update Software SC Orbit Estimation
+        func_main_software_SC_estimate_orbit(mission.true_SC{i_SC}.software_SC_estimate_orbit, mission, i_SC);        
 
     end
 
@@ -63,7 +70,7 @@ for k = 1:1:mission.true_time.num_time_steps
         func_update_storage_flag_attitude(mission.storage, mission);
         func_update_time_store_attitude(mission.true_time, mission);
 
-        %% [ ] For Each Spacecraft
+        %% [ ] For Each Spacecraft in ADL
         for i_SC = 1:1:mission.num_SC
 
             %% [ ] [ ] Update SC Attitude in ADL
@@ -93,13 +100,18 @@ for k = 1:1:mission.true_time.num_time_steps
 
 
             %% [ ] Update Micro Thrusters
-            for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_micro_thruster
-                func_main_true_SC_micro_thruster(mission.true_SC{i_SC}.true_SC_micro_thruster{i_HW}, mission, i_SC, i_HW);
+            for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_RCS_thruster
+                func_main_true_SC_RCS_thruster(mission.true_SC{i_SC}.true_SC_RCS_thruster{i_HW}, mission, i_SC, i_HW);
             end
 
             %% [ ] Update Reaction wheels
             for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_reaction_wheel
                 func_main_true_reaction_wheel(mission.true_SC{i_SC}.true_SC_reaction_wheel{i_HW}, mission, i_SC, i_HW);
+            end
+
+            %% [ ] Update Magnetorquers
+            for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_magnetorquer
+                func_main_true_SC_magnetorquer(mission.true_SC{i_SC}.true_SC_magnetorquer{i_HW}, mission, i_SC, i_HW);
             end
 
 
@@ -114,14 +126,14 @@ for k = 1:1:mission.true_time.num_time_steps
             func_main_true_SC_camera(mission.true_SC{i_SC}.true_SC_camera{i_HW}, mission, i_SC, i_HW);
         end
 
+        %% [ ] Update SC Telescope
+        for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_telescope
+            func_main_true_SC_telescope(mission.true_SC{i_SC}.true_SC_telescope{i_HW}, mission, i_SC, i_HW);
+        end
+
         %% [ ] Update SC Science Radar 
         for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_science_radar
             func_main_true_SC_science_radar(mission.true_SC{i_SC}.true_SC_science_radar{i_HW}, mission, i_SC, i_HW);
-        end
-
-        %% [ ] Update SC Science Processor
-        for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_science_processor
-            func_main_true_SC_science_processor(mission.true_SC{i_SC}.true_SC_science_processor{i_HW}, mission, i_SC);
         end
 
         %% [ ] Update SC Remote Sensing 
@@ -152,10 +164,12 @@ for k = 1:1:mission.true_time.num_time_steps
             func_main_true_SC_solar_panel(mission.true_SC{i_SC}.true_SC_solar_panel{i_HW}, mission, i_SC);
         end
 
-        %% [ ] Update Software SC Orbit Estimation in ADL
-        func_main_software_SC_estimate_orbit(mission.true_SC{i_SC}.software_SC_estimate_orbit, mission, i_SC);
+        %% [ ] Update SC RPS
+        for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_RPS
+            func_main_true_SC_RPS(mission.true_SC{i_SC}.true_SC_RPS{i_HW}, mission, i_SC);
+        end
 
-        %% [ ] Update Software SC Orbit Control in ADL
+        %% [ ] Update Software SC Orbit Control
         func_main_software_SC_control_orbit(mission.true_SC{i_SC}.software_SC_control_orbit, mission, i_SC);
         
         %% [ ] Update Chemical Thruster 
@@ -163,9 +177,15 @@ for k = 1:1:mission.true_time.num_time_steps
             func_main_true_chemical_thruster(mission.true_SC{i_SC}.true_SC_chemical_thruster{i_HW}, mission, i_SC, i_HW);
         end
 
-        %% [ ] Update EP Thruster 
+        %% [ ] Update EP Thruster         
         for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_ep_thruster
             func_main_true_ep_thruster(mission.true_SC{i_SC}.true_SC_ep_thruster{i_HW}, mission, i_SC, i_HW);
+        end
+
+        %% [ ] Update SC Science Processor
+        for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_science_processor
+            mission.true_SC{i_SC}.true_SC_science_processor{i_HW}.flag_executive = 1;
+            func_main_true_SC_science_processor(mission.true_SC{i_SC}.true_SC_science_processor{i_HW}, mission, i_SC,i_HW);
         end
 
         %% [ ] Update Fuel Tanks
@@ -199,7 +219,12 @@ for k = 1:1:mission.true_time.num_time_steps
 
     %% Update Ground Stations's Radio Antenna
     for i_HW = 1:1:mission.true_ground_station.num_GS_radio_antenna
-        func_main_true_GS_radio_antenna(mission.true_GS_radio_antenna{i_HW}, mission);
+        func_main_true_GS_radio_antenna(mission.true_GS_radio_antenna{i_HW}, mission, i_HW);
+    end
+
+    %% Update Ground Stations's Software Enterprise
+    for i_HW = 1:1:mission.true_ground_station.num_GS_enterprise
+        func_main_software_GS_enterprise(mission.software_GS_enterprise{i_HW}, mission, i_HW);
     end
 
     %% Update Ground Station

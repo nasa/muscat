@@ -4,10 +4,10 @@ function Xdot = func_ode_orbit_inertial_absolute_dynamics(t, X, mission, i_SC)
 R_SC = X(1:3); % [km]
 
 % Initialize Acc with Control Force
-acc = (1/mission.true_SC{i_SC}.true_SC_body.total_mass) * (1e-3) * mission.true_SC{i_SC}.true_SC_navigation.control_force'; % [km / sec^2] in (3,1) format
+acc = (1/mission.true_SC{i_SC}.true_SC_body.total_mass) * (1e-3) * mission.true_SC{i_SC}.true_SC_orbit_propagation.control_force'; % [km / sec^2] in (3,1) format
 
 % Add disturbance forces to Acc
-acc = acc + (1/mission.true_SC{i_SC}.true_SC_body.total_mass) * (1e-3) * mission.true_SC{i_SC}.true_SC_navigation.disturbance_force'; % [km / sec^2]  in (3,1) format
+acc = acc + (1/mission.true_SC{i_SC}.true_SC_body.total_mass) * (1e-3) * mission.true_SC{i_SC}.true_SC_orbit_propagation.disturbance_force'; % [km / sec^2]  in (3,1) format
 
 % Add forces from Solar System bodies
 for i = 1:1:mission.true_solar_system.num_SS_body

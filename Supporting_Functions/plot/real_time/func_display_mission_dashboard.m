@@ -235,11 +235,11 @@ function build_left_dashboard_content(parent, mission, is_realtime_update)
             
             % Distance calculations
             if isprop(mission.true_target{i_target}, 'position') && isfield(mission, 'true_SC') && ...
-               numel(mission.true_SC) > 0 && isfield(mission.true_SC{1}, 'true_SC_navigation') && ...
-               isprop(mission.true_SC{1}.true_SC_navigation, 'position')
+               numel(mission.true_SC) > 0 && isfield(mission.true_SC{1}, 'true_SC_orbit_propagation') && ...
+               isprop(mission.true_SC{1}.true_SC_orbit_propagation, 'position')
                 
                 % Distance from spacecraft to target
-                distance_to_target = norm(mission.true_SC{1}.true_SC_navigation.position - mission.true_target{i_target}.position);
+                distance_to_target = norm(mission.true_SC{1}.true_SC_orbit_propagation.position - mission.true_target{i_target}.position);
                 y_pos = addLabelValuePair(parent, 'Distance to Target:', sprintf('%.2f km', distance_to_target), ...
                     y_pos, label_color, value_color, text_font);
             end
@@ -318,12 +318,12 @@ function build_right_dashboard_content(parent, mission, is_realtime_update)
         if isfield(mission, 'true_SC') && numel(mission.true_SC) >= i_SC
             
             % Position and Velocity
-            if isfield(mission.true_SC{i_SC}, 'true_SC_navigation')
+            if isfield(mission.true_SC{i_SC}, 'true_SC_orbit_propagation')
                 createTextLabel(parent, 0.08, y_pos, sprintf('SPACECRAFT %d', i_SC), 'left', title_color, title_font, 'bold');
                 y_pos = y_pos - y_step_large;
                 
-                if isprop(mission.true_SC{i_SC}.true_SC_navigation, 'position')
-                    pos = mission.true_SC{i_SC}.true_SC_navigation.position;
+                if isprop(mission.true_SC{i_SC}.true_SC_orbit_propagation, 'position')
+                    pos = mission.true_SC{i_SC}.true_SC_orbit_propagation.position;
                     % Format position vector with scientific notation and stack components
                     createTextLabel(parent, 0.08, y_pos, 'Position (km):', 'left', label_color, text_font);
                     y_pos = y_pos - y_step_small;
@@ -337,8 +337,8 @@ function build_right_dashboard_content(parent, mission, is_realtime_update)
                     y_pos = y_pos - y_step_small;
                 end
                 
-                if isprop(mission.true_SC{i_SC}.true_SC_navigation, 'velocity')
-                    vel = mission.true_SC{i_SC}.true_SC_navigation.velocity;
+                if isprop(mission.true_SC{i_SC}.true_SC_orbit_propagation, 'velocity')
+                    vel = mission.true_SC{i_SC}.true_SC_orbit_propagation.velocity;
                     % Format velocity vector with scientific notation and stack components
                     createTextLabel(parent, 0.08, y_pos, 'Velocity (km/s):', 'left', label_color, text_font);
                     y_pos = y_pos - y_step_small;

@@ -1,15 +1,15 @@
 %% [ ] Methods: Generic
-% Execute generic coverage code
+% Execute generic coverage code for Remote Sensing, Radar, Camera
 
 function obj = func_coverage_Generic(obj, mission, i_SC)
 
 this_orientation = (mission.true_SC{i_SC}.true_SC_adc.rotation_matrix * obj.orientation')'; % [unit vector]
 
-this_SC_relative_position = mission.true_SC{i_SC}.true_SC_navigation.position_relative_target; % [km]
+this_SC_relative_position = mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target; % [km]
 distance_SC_Target = norm(this_SC_relative_position); % [km]
 this_SC_relative_position_normalize = func_normalize_vec(this_SC_relative_position); % [unit vector]
 
-i_target = mission.true_SC{i_SC}.true_SC_navigation.index_relative_target;
+i_target = mission.true_SC{i_SC}.true_SC_orbit_propagation.index_relative_target;
 this_pos_points_normalized = (mission.true_target{i_target}.rotation_matrix * obj.pos_points')'; % Rotated unit vectors
 this_pos_points = mission.true_target{i_target}.radius * this_pos_points_normalized; % [km]
 

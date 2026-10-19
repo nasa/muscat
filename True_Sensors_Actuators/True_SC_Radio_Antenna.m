@@ -57,6 +57,11 @@ classdef True_SC_Radio_Antenna < handle
 
         instantaneous_data_rate_generated % [kbps] : Data rate, in kilo bits per sec (kbps) due to RX
 
+        instantaneous_data_type = 0 % 0 = Data rate, 1 = Data per sample 
+                                    % used to avoid calling isprop() every time
+                                    % step to determine if using instantaneous_data_rate_generated or
+                                    % instantaneous_data_generated_per_sample, which is slow
+
         instantaneous_data_rate_removed % [kbps] : Data rate, in kilo bits per sec (kbps) due to TX
 
         data % Other useful data
@@ -103,7 +108,7 @@ classdef True_SC_Radio_Antenna < handle
                 obj.coding_gain = init_data.coding_gain; % [dB]
 
             end
-            % 
+             
             obj.base_data_rate_generated = init_data.base_data_rate_generated; % [kbps]
             obj.instantaneous_data_rate_generated = obj.base_data_rate_generated; % [kbps]
             obj.instantaneous_data_rate_removed = 0; % [kbps]

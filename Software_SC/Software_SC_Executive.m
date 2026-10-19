@@ -14,6 +14,11 @@ classdef Software_SC_Executive < handle
 
         instantaneous_data_generated_per_sample % [kb] : Data generated per sample, in kilo bits (kb)
 
+        instantaneous_data_type = 1 % 0 = Data rate, 1 = Data per sample 
+                                    % used to avoid calling isprop() every time
+                                    % step to determine if using instantaneous_data_rate_generated or
+                                    % instantaneous_data_generated_per_sample, which is slow
+
         compute_wait_time % [sec]
 
         %% [ ] Properties: Variables Computed Internally
@@ -28,7 +33,11 @@ classdef Software_SC_Executive < handle
 
         flag_slew_sc_mode_exists % [Boolean] : Does a mode called 'Slew' exist?
 
-        data % Other useful data
+        data % [struct] Other useful data
+
+        mode_selector_name % [string] Alternative name of mode
+
+        flag_mission_specific_storage_variables_exists % [Boolean] Do additional mission-specific storage variables exisit? 
 
         %% [ ] Properties: Storage Variables
 
@@ -53,13 +62,18 @@ classdef Software_SC_Executive < handle
             obj.instantaneous_data_generated_per_sample = 0; % [kb]
 
             obj.this_sc_mode = obj.sc_modes{1};
-            obj.this_sc_mode_value = func_find_this_sc_mode_value(obj, obj.this_sc_mode);
-
+            obj.this_sc_mode_value = func_find_this_sc_mode_value(obj, obj.this_sc_mode);            
 
             if isfield(init_data, 'data')
                 obj.data = init_data.data;
             else
                 obj.data = [];
+            end
+
+            if isfield(init_data, 'mode_selector_name')
+                obj.mode_selector_name = init_data.mode_selector_name;
+            else
+                obj.mode_selector_name = mission.name;
             end
 
             if isfield(init_data, 'compute_wait_time')
@@ -82,27 +96,35 @@ classdef Software_SC_Executive < handle
             obj.store.date = zeros(mission.storage.num_storage_steps, length(obj.date));
             obj.store.sc_modes = obj.sc_modes; % [sec]
 
-            % Additional Executive Variables
+            % Additional Mission-Specific Executive Variables
             switch obj.mode_software_SC_executive_selector
 
-                case 'DART'
-                    obj = func_software_SC_executive_Dart_constructor(obj, mission, i_SC);
-               
-                case 'Nightingale'
-                    obj = func_software_SC_executive_Nightingale_constructor(obj, mission, i_SC);
+                case 'mission specific'
+                    func_name = ['func_software_SC_executive_constructor_', obj.mode_selector_name];     
 
-                case 'IBEAM'
-                    obj = func_software_SC_executive_IBEAM_constructor(obj, mission, i_SC);
+                    if exist(func_name, 'file') == 2 || exist(func_name, 'builtin') == 5
+                            disp('Additional Mission-Specific Executive constructor function exists!');
+                            this_func_handle = str2func(func_name);
+                            obj = this_func_handle(obj, mission, i_SC);
 
-                case 'NISAR'
-                    obj = func_software_SC_executive_NISAR_constructor(obj, mission, i_SC);
-
-                case 'GoldenDome'
-                    obj = func_software_SC_executive_GoldenDome_constructor(obj, mission, i_SC);
+                        else
+                            disp('Additional Mission-Specific Executive constructor function does NOT exist.');
+                            % Do nothing! 
+                    end                                                                  
 
                 otherwise
-                    % Do nothing!
-                    disp('Using only DART Executive variables!')
+                    disp('Additional Executive constructor mode not defined!')
+            end
+
+            % Additional Mission-Specific Storage Variables
+            func_name = ['func_update_software_SC_executive_store_', obj.mode_selector_name];
+
+            if exist(func_name, 'file') == 2 || exist(func_name, 'builtin') == 5
+                disp('Additional Mission-Specific Executive storage function exists!');
+                obj.flag_mission_specific_storage_variables_exists = true;                
+            else
+                disp('Additional Mission-Specific Executive storage function does NOT exist.');
+                obj.flag_mission_specific_storage_variables_exists = false;
             end
 
             % Update Storage
@@ -121,24 +143,12 @@ classdef Software_SC_Executive < handle
                 obj.store.this_sc_mode_value(mission.storage.k_storage,:) = obj.this_sc_mode_value; % [integer]
                 obj.store.time(mission.storage.k_storage,:) = obj.time; % [sec]
                 obj.store.date(mission.storage.k_storage,:) = obj.date; % [sec]
-
-                % Additional Storage Variables
-                switch obj.mode_software_SC_executive_selector
-
-                    case 'Nightingale'
-                        obj = func_update_software_SC_executive_store_Nightingale(obj, mission);
-
-                    case 'NISAR'
-                        obj = func_update_software_SC_executive_store_NISAR(obj, mission);
-
-                    case 'GoldenDome'
-                        obj = func_update_software_SC_executive_store_GoldenDome(obj, mission);
-
-                    % case 'IBEAM'
-                    %     obj = func_update_software_SC_executive_store_IBEAM(obj, mission);
-
-                    otherwise
-                        % Do nothing!
+                
+                % Additional Mission-Specific Storage Variables
+                if obj.flag_mission_specific_storage_variables_exists
+                    func_name = ['func_update_software_SC_executive_store_', obj.mode_selector_name];
+                    this_func_handle = str2func(func_name);
+                    obj = this_func_handle(obj, mission);
                 end
             end
         end
@@ -156,21 +166,11 @@ classdef Software_SC_Executive < handle
 
             switch obj.mode_software_SC_executive_selector
 
-                case 'DART'
-                    obj = func_software_SC_executive_DART(obj, mission, i_SC);
-                    
-                case 'Nightingale'
-                    obj = func_software_SC_executive_Nightingale(obj, mission, i_SC);
-                    
-                case 'IBEAM'
-                    obj = func_software_SC_executive_IBEAM(obj, mission, i_SC);
-                    
-                case 'NISAR'
-                    obj = func_software_SC_executive_NISAR(obj, mission, i_SC);
-
-                case 'GoldenDome'
-                    obj = func_software_SC_executive_GoldenDome(obj, mission, i_SC);
-                    
+                case 'mission specific'
+                    func_name = ['func_software_SC_executive_', obj.mode_selector_name];                     
+                    this_func_handle = str2func(func_name);
+                    obj = this_func_handle(obj, mission, i_SC);                                   
+                                                                    
                 otherwise
                     error('Executive mode not defined!')
             end

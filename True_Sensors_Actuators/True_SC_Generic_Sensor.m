@@ -11,6 +11,11 @@ classdef True_SC_Generic_Sensor < handle
         instantaneous_power_consumed % [Watts] : Instantaneous power consumed
 
         instantaneous_data_rate_generated % [kbps] : Data rate, in kilo bits per sec (kbps)
+
+        instantaneous_data_type = 0 % 0 = Data rate, 1 = Data per sample 
+                                    % used to avoid calling isprop() every time
+                                    % step to determine if using instantaneous_data_rate_generated or
+                                    % instantaneous_data_generated_per_sample, which is slow
                 
         %% [ ] Properties: Variables Computed Internally
 

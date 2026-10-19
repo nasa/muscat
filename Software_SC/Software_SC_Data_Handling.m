@@ -10,8 +10,12 @@ classdef Software_SC_Data_Handling < handle
 
         instantaneous_data_generated_per_sample % [kb] : Data generated per sample, in kilo bits (kb)
 
+        instantaneous_data_type = 1 % 0 = Data rate, 1 = Data per sample
+        % used to avoid calling isprop() every time
+        % step to determine if using instantaneous_data_rate_generated or
+        % instantaneous_data_generated_per_sample, which is slow
+
         mode_software_SC_data_handling_selector % [string] Different Data Handling modes
-        % - 'Generic'
 
         %% [ ] Properties: Variables Computed Internally
 
@@ -24,6 +28,8 @@ classdef Software_SC_Data_Handling < handle
         mean_state_of_data_storage % [percentage] : SoDS is defined by = 100× Sum (instantaneous_capacity) / Sum (maximum_capacity)
 
         data % Other useful data
+
+        mode_selector_name % [string] Alternative name of mode
 
         %% [ ] Properties: Storage Variables
 
@@ -42,7 +48,7 @@ classdef Software_SC_Data_Handling < handle
             obj.name = [mission.true_SC{i_SC}.true_SC_body.name, ' SW Data Handling']; % [string]
             obj.flag_executive = 0;
 
-            obj.instantaneous_data_generated_per_sample = init_data.instantaneous_data_generated_per_sample; % [kb]            
+            obj.instantaneous_data_generated_per_sample = init_data.instantaneous_data_generated_per_sample; % [kb]
 
             if isfield(init_data, 'mode_software_SC_data_handling_selector')
                 obj.mode_software_SC_data_handling_selector = init_data.mode_software_SC_data_handling_selector;
@@ -56,7 +62,13 @@ classdef Software_SC_Data_Handling < handle
                 obj.data = [];
             end
 
-            % Initialize 
+            if isfield(init_data, 'mode_selector_name')
+                obj.mode_selector_name = init_data.mode_selector_name;
+            else
+                obj.mode_selector_name = mission.name;
+            end
+
+            % Initialize
             obj.mean_state_of_data_storage = 0;
             obj.total_data_storage = 0; % [kb]
 
@@ -81,9 +93,9 @@ classdef Software_SC_Data_Handling < handle
         function obj = func_update_software_SC_data_handling_store(obj, mission)
 
             if mission.storage.flag_store_this_time_step == 1
-                obj.store.flag_executive(mission.storage.k_storage,:) = obj.flag_executive; % [Boolean]                
-                obj.store.mean_state_of_data_storage(mission.storage.k_storage,:) = obj.mean_state_of_data_storage; % [percentage]            
-                obj.store.total_data_storage(mission.storage.k_storage,:) = obj.total_data_storage; % [kb]            
+                obj.store.flag_executive(mission.storage.k_storage,:) = obj.flag_executive; % [Boolean]
+                obj.store.mean_state_of_data_storage(mission.storage.k_storage,:) = obj.mean_state_of_data_storage; % [percentage]
+                obj.store.total_data_storage(mission.storage.k_storage,:) = obj.total_data_storage; % [kb]
             end
 
         end
@@ -93,24 +105,24 @@ classdef Software_SC_Data_Handling < handle
 
         function obj = func_main_software_SC_data_handling(obj, mission, i_SC)
 
-    
+
             switch obj.mode_software_SC_data_handling_selector
-    
+
+                case 'mission specific'
+                        func_name = ['func_update_mean_SoDS_', obj.mode_selector_name];
+                        this_func_handle = str2func(func_name);
+                        obj = this_func_handle(obj, mission, i_SC);
+
                 case 'Generic'
                     % Update Mean SoC
-                    obj = func_update_mean_state_of_data_storage(obj, mission, i_SC);
-    
-                case 'Nightingale'
-                    % Update Mean SoC for (num_onboard_memory-1) only
-                    obj = func_update_mean_state_of_data_storage_Nightingale(obj, mission, i_SC);                        
-    
+                    obj = func_update_mean_SoDS(obj, mission, i_SC);
+
                 otherwise
                     error('Data Handling mode not defined!')
             end
-    
+
             % Update Data Generated
             func_update_instantaneous_data_generated(mission.true_SC{i_SC}.true_SC_data_handling, obj, mission);
-
 
             % Update Storage
             obj = func_update_software_SC_data_handling_store(obj, mission);
@@ -120,9 +132,28 @@ classdef Software_SC_Data_Handling < handle
 
         end
 
+        %% [ ] Methods: Update Mean SoDS
+        % Updates mean_state_of_data_storage
 
-        
-        
+        function obj = func_update_mean_SoDS(obj, mission, i_SC)
+
+            total_instantaneous_capacity = 0; % [kb]
+            total_maximum_capacity = 0; % [kb]
+
+            for i_memory = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_onboard_memory
+
+                total_instantaneous_capacity = total_instantaneous_capacity + mission.true_SC{i_SC}.true_SC_onboard_memory{i_memory}.instantaneous_capacity; % [kb]
+                total_maximum_capacity = total_maximum_capacity + mission.true_SC{i_SC}.true_SC_onboard_memory{i_memory}.maximum_capacity; % [kb]
+
+            end
+
+            obj.mean_state_of_data_storage = 100 * total_instantaneous_capacity / total_maximum_capacity; % [percentage]
+
+            obj.total_data_storage = total_instantaneous_capacity; % [kb]
+
+        end
+
+
     end
 end
 

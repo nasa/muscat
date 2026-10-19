@@ -14,16 +14,17 @@ classdef True_SC_Fuel_Tank < handle
 
         instantaneous_data_rate_generated % [kbps] Data rate generated during current time step
 
+        instantaneous_data_type = 0 % 0 = Data rate, 1 = Data per sample 
+                                    % used to avoid calling isprop() every time
+                                    % step to determine if using instantaneous_data_rate_generated or
+                                    % instantaneous_data_generated_per_sample, which is slow
+
         maximum_capacity        % [kg] Maximum fuel mass capacity
 
         instantaneous_fuel_mass % [kg] Current fuel mass in the tank
         
-        fuel_density            % [kg/m^3] Density of the propellant
-
         location                % [m] Location of the tank in the body frame
-        
-        shape_model             % Structure containing shape model information
-
+                
         %% [ ] Properties: Variables Computed Internally
 
         health                  % [integer] Health of fuel tank (0: Off, 1: On)
@@ -62,17 +63,9 @@ classdef True_SC_Fuel_Tank < handle
             % Fuel parameters
             obj.maximum_capacity = init_data.maximum_capacity;
             obj.instantaneous_fuel_mass = init_data.initial_fuel_mass;
-            obj.fuel_density = init_data.fuel_density;
-
+            
             % Physical parameters
-            obj.location = init_data.location;
-
-            % Shape model if provided
-            if isfield(init_data, 'shape_model')
-                obj.shape_model = init_data.shape_model;
-            else
-                obj.shape_model = [];
-            end
+            obj.location = init_data.location;            
 
             % Flag for body update
             obj.flag_update_SC_body = 0;
@@ -111,7 +104,7 @@ classdef True_SC_Fuel_Tank < handle
 
             % Check if there's enough fuel
             if fuel_mass_consumed > obj.instantaneous_fuel_mass
-                warning('Fuel tank %s: Attempted to consume more fuel than available!', obj.name);
+                % warning('Fuel tank %s: Attempted to consume more fuel than available!', obj.name);
                 fuel_mass_consumed = obj.instantaneous_fuel_mass;
             end
 

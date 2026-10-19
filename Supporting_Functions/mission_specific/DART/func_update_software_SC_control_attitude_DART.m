@@ -13,7 +13,7 @@ obj = func_compute_desired_attitude_Array_Search(obj);
 obj.desired_angular_velocity = zeros(1,3); % [rad/sec]
 
 % Control
-switch obj.mode_software_SC_control_attitude_selector
+switch obj.data.submode_software_SC_control_attitude_selector
 
     case 'DART Oracle'
         % Use Oracle

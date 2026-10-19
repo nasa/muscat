@@ -18,6 +18,11 @@ classdef True_SC_Reaction_Wheel < handle
         angular_velocity_noise       %[rad/s] : Random noise added to commanded torque
                 
         instantaneous_data_generated_per_sample %[Kb] : Data generated during the current time step
+
+        instantaneous_data_type = 1 % 0 = Data rate, 1 = Data per sample 
+                                    % used to avoid calling isprop() every time
+                                    % step to determine if using instantaneous_data_rate_generated or
+                                    % instantaneous_data_generated_per_sample, which is slow
         
         %% [ ] Properties: Variables Computed Internally
 
@@ -64,16 +69,21 @@ classdef True_SC_Reaction_Wheel < handle
             obj.health = true;
             obj.location = init_data.location;
             obj.orientation = init_data.orientation;
-            obj.max_angular_velocity = init_data.max_angular_velocity;
-            obj.radius = init_data.radius;
-            obj.mass = init_data.mass;
+            obj.max_angular_velocity = init_data.max_angular_velocity;            
 
             obj.instantaneous_data_generated_per_sample = init_data.instantaneous_data_generated_per_sample; % [kb]
             obj.instantaneous_data_volume = obj.instantaneous_data_generated_per_sample; % [kb]
 
-            % Calculate moment of inertia
-            % For a disk rotating around its center axis : 1/2*m*r^2
-            obj.moment_of_inertia = 0.5 * obj.mass * obj.radius^2;
+            if isfield(init_data,'moment_of_inertia')
+                obj.moment_of_inertia = init_data.moment_of_inertia; % [rad]
+            else
+                % Calculate moment of inertia
+                % For a disk rotating around its center axis : 1/2*m*r^2
+                obj.radius = init_data.radius;
+                obj.mass = init_data.mass;
+                obj.moment_of_inertia = 0.5 * obj.mass * obj.radius^2;
+            end
+            
 
             obj.power_consumed_angular_velocity_array = init_data.power_consumed_angular_velocity_array;
 
@@ -113,7 +123,7 @@ classdef True_SC_Reaction_Wheel < handle
             obj.angular_velocity_noise = init_data.angular_velocity_noise;
 
             % Initialize dynamic state
-            obj.angular_velocity = 0;
+            obj.angular_velocity = init_data.angular_velocity;
             obj.commanded_angular_acceleration = 0;
             obj.saturated = false;
             obj.flag_executive = false;
@@ -123,10 +133,10 @@ classdef True_SC_Reaction_Wheel < handle
             obj.actual_torque = [0,0,0];
 
             % Initialize storage
-            obj.total_momentum = 0;
+            obj.total_momentum = obj.moment_of_inertia * obj.angular_velocity * obj.orientation;
 
             obj.store = [];
-            obj.store.angular_velocity = zeros(mission.storage.num_storage_steps_attitude, 1);
+            obj.store.angular_velocity = obj.angular_velocity;
             obj.store.torque = zeros(mission.storage.num_storage_steps_attitude, 1);
             obj.store.saturated = zeros(mission.storage.num_storage_steps_attitude, 1);
 
@@ -240,8 +250,9 @@ classdef True_SC_Reaction_Wheel < handle
                 obj.saturated = (abs(obj.angular_velocity) >= obj.max_angular_velocity * 0.80);
 
                 % Update spacecraft torque directly
+                % Torque on body is equal and opposite the applied RWA torque
                 mission.true_SC{i_SC}.true_SC_adc.control_torque = ...
-                    mission.true_SC{i_SC}.true_SC_adc.control_torque + obj.actual_torque; 
+                    mission.true_SC{i_SC}.true_SC_adc.control_torque - obj.actual_torque; 
                                 
                 % Update power and data
                 obj.instantaneous_power_consumption = abs(obj.actual_torque * obj.angular_velocity);

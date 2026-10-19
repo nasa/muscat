@@ -12,6 +12,11 @@ classdef True_SC_Onboard_Memory < handle
 
         instantaneous_data_rate_generated % [kbps] : Data rate generated during current time step, in kilo bits (kb) per sec
 
+        instantaneous_data_type = 0 % 0 = Data rate, 1 = Data per sample 
+                                    % used to avoid calling isprop() every time
+                                    % step to determine if using instantaneous_data_rate_generated or
+                                    % instantaneous_data_generated_per_sample, which is slow
+
         maximum_capacity % [kb] : Maximum data storage capacity of the Memeory
 
         %% [ ] Properties: Variables Computed Internally

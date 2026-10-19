@@ -1,17 +1,17 @@
 %% [ ] Methods: Estimate Orbit Truth With Error Growth
 % Realistic model with error growth when camera doesn't have target in view
 
-function obj = func_update_software_SC_estimate_orbit_TruthWithErrorGrowth(obj, mission, i_SC)
+function obj = func_update_sw_SC_est_orbit_TruthWithErrorGrowth(obj, mission, i_SC)
 % Update compute time
 obj.compute_time = mission.true_SC{i_SC}.software_SC_executive.time;
 
 obj.instantaneous_data_generated_per_sample = (1e-3)*8*36; % [kb] i.e. 36 Bytes per sample
 
 % Get the basic true values first
-obj.position = mission.true_SC{i_SC}.true_SC_navigation.position; % [km]
-obj.velocity = mission.true_SC{i_SC}.true_SC_navigation.velocity; % [km/sec]
-obj.position_relative_target = mission.true_SC{i_SC}.true_SC_navigation.position_relative_target; % [km]
-obj.velocity_relative_target = mission.true_SC{i_SC}.true_SC_navigation.velocity_relative_target; % [km/sec]
+obj.position = mission.true_SC{i_SC}.true_SC_orbit_propagation.position; % [km]
+obj.velocity = mission.true_SC{i_SC}.true_SC_orbit_propagation.velocity; % [km/sec]
+obj.position_relative_target = mission.true_SC{i_SC}.true_SC_orbit_propagation.position_relative_target; % [km]
+obj.velocity_relative_target = mission.true_SC{i_SC}.true_SC_orbit_propagation.velocity_relative_target; % [km/sec]
 obj.position_target = mission.true_target{obj.index_relative_target}.position; % [km]
 obj.velocity_target = mission.true_target{obj.index_relative_target}.velocity; % [km/sec]
 

@@ -10,6 +10,11 @@ classdef Software_SC_Estimate_Attitude < handle
 
         instantaneous_data_generated_per_sample % [kb] : Data generated per sample, in kilo bits (kb)
 
+        instantaneous_data_type = 1 % 0 = Data rate, 1 = Data per sample 
+                                    % used to avoid calling isprop() every time
+                                    % step to determine if using instantaneous_data_rate_generated or
+                                    % instantaneous_data_generated_per_sample, which is slow
+
         mode_software_SC_estimate_attitude_selector % [string] Different attitude estimation modes
         % - 'Truth' : Use True_SC_ADC values
         % - 'Truth with Noise' : Use True_SC_ADC values + Noise
@@ -25,15 +30,23 @@ classdef Software_SC_Estimate_Attitude < handle
 
         angular_velocity % [rad/sec] : Angular velocity of inertial frame I with respect to the body frame B
 
+        angular_momentum_BF % [kg m^2 /sec] : Angular momentum of Body Frame
+
+        gyro_bias % [rad/sec] : Estimated gyro rate bias in body frame B
+
         dot_angular_velocity % [rad/sec^2] : Time derivative of angular_velocity (needed by RWA)
 
         attitude_uncertainty % [error in quaternion]
 
         angular_velocity_uncertainty % [rad/sec]
 
+        gyro_bias_uncertainty % [rad/sec]
+
         dot_angular_velocity_uncertainty % [rad/sec^2]
 
         data % Other useful data
+
+        attitude_filter % AttitudeFilter object class
 
 
         %% [ ] Properties: Storage Variables
@@ -63,6 +76,46 @@ classdef Software_SC_Estimate_Attitude < handle
 
             obj = func_update_software_SC_estimate_attitude_Truth(obj, mission, i_SC);
 
+            
+
+            % Initialize the Estimator
+
+            if strcmp(init_data.mode_software_SC_estimate_attitude_selector,'KF')
+                obj.attitude = init_data.initial_est_q_BF_IF;
+                obj.gyro_bias = init_data.initial_est_gyro_bias_BF;
+                obj.attitude_uncertainty = init_data.initial_sigma_theta_BF*ones(1,3);
+                obj.gyro_bias_uncertainty = init_data.initial_sigma_gyro_bias_BF*ones(1,3);
+
+                obj.attitude_filter = AttitudeKalmanFilter(...
+                    mission.true_time.time_step_attitude,...
+                    init_data.gyro_sigma,...
+                    init_data.bias_sigma,...
+                    init_data.startracker_sigma_SF,...
+                    init_data.initial_est_q_BF_IF,...
+                    init_data.initial_est_omega_BF,...
+                    init_data.initial_est_gyro_bias_BF,...
+                    init_data.initial_sigma_theta_BF,...
+                    init_data.initial_sigma_gyro_bias_BF,...
+                    init_data.startracker_C_BF_SF);
+            else
+
+                obj.attitude = zeros(1,4);
+                obj.attitude_uncertainty = zeros(1,3);
+
+                obj.angular_velocity = zeros(1,3);
+                obj.angular_velocity_uncertainty = zeros(1,3); 
+
+                obj.gyro_bias = zeros(1,3);
+                obj.gyro_bias_uncertainty = zeros(1,3);
+
+                obj.dot_angular_velocity = zeros(1,3);
+                obj.dot_angular_velocity_uncertainty = zeros(1,3);
+
+            end
+
+            % Initialize momentum
+            obj = func_update_angular_momentum(obj, mission, i_SC);
+
             % Initialize Variables to store: attitude angular_velocity dot_angular_velocity and uncertainties
             obj.store = [];
 
@@ -76,6 +129,9 @@ classdef Software_SC_Estimate_Attitude < handle
 
             obj.store.dot_angular_velocity = zeros(mission.storage.num_storage_steps_attitude, length(obj.dot_angular_velocity));
             obj.store.dot_angular_velocity_uncertainty = zeros(mission.storage.num_storage_steps_attitude, length(obj.dot_angular_velocity_uncertainty));
+
+            obj.store.gyro_bias = zeros(mission.storage.num_storage_steps_attitude, 3);
+            obj.store.gyro_bias_uncertainty = zeros(mission.storage.num_storage_steps_attitude, 3);
 
             % Update Storage
             obj = func_update_software_SC_estimate_attitude_store(obj, mission);
@@ -101,6 +157,9 @@ classdef Software_SC_Estimate_Attitude < handle
 
                 obj.store.dot_angular_velocity(mission.storage.k_storage_attitude,:) = obj.dot_angular_velocity; % [rad/sec^2]
                 obj.store.dot_angular_velocity_uncertainty(mission.storage.k_storage_attitude,:) = obj.dot_angular_velocity_uncertainty;
+
+                obj.store.gyro_bias(mission.storage.k_storage_attitude,:) = obj.gyro_bias; % [rad/sec^2]
+                obj.store.gyro_bias_uncertainty(mission.storage.k_storage_attitude,:) = obj.gyro_bias_uncertainty;
             end
 
         end
@@ -116,13 +175,33 @@ classdef Software_SC_Estimate_Attitude < handle
 
                     case 'Truth'
                         obj = func_update_software_SC_estimate_attitude_Truth(obj, mission, i_SC);
+                        
+                        % % Enable star tracker/IMU execution
+                        % for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_star_tracker
+                        %     mission.true_SC{i_SC}.true_SC_star_tracker{i_HW}.flag_executive = 1;
+                        % end
+                        % for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_imu
+                        %     mission.true_SC{i_SC}.true_SC_imu{i_HW}.flag_executive = 1;
+                        % end
 
                     case 'KF'
-                        obj = func_update_software_SC_estimate_attitude_KF(obj, mission, i_SC);
+                        % obj = func_update_software_SC_estimate_attitude_KF(obj, mission, i_SC);
+                        obj = func_update_software_SC_estimate_attitude_KF_354GNC(obj, mission, i_SC);
+
+                        % Enable star tracker/IMU execution
+                        for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_star_tracker
+                            mission.true_SC{i_SC}.true_SC_star_tracker{i_HW}.flag_executive = 1;
+                        end
+                        for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_imu
+                            mission.true_SC{i_SC}.true_SC_imu{i_HW}.flag_executive = 1;
+                        end
 
                     otherwise
                         error('Attitude Estimation mode not defined!')
                 end
+
+                % Update momentum estimate
+                obj = func_update_angular_momentum(obj, mission, i_SC);
 
                 % Update Data Generated
                 func_update_instantaneous_data_generated(mission.true_SC{i_SC}.true_SC_data_handling, obj, mission);
@@ -138,16 +217,23 @@ classdef Software_SC_Estimate_Attitude < handle
             else
                 % DONOT SWITCH OFF FUNCTIONS USING flag_executive INSIDE Attitude Dynamics Loop (ADL)
             end
-
-
-            
-
+           
         end
 
-        
 
-        
+        %% [ ] Methods: Update Angular Momentum
+        % Compute the angular momentum of the spacecraft
 
+        function obj = func_update_angular_momentum(obj, mission, i_SC)
+            % TODO: Include solar array momentum when they are actively changing orientation 
+
+            rwa_mom_BF = zeros(1,3);
+            for ii = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_reaction_wheel
+                rwa_mom_BF = rwa_mom_BF + mission.true_SC{i_SC}.true_SC_reaction_wheel{ii}.total_momentum(:).';
+            end
+
+            obj.angular_momentum_BF = (rwa_mom_BF + (mission.true_SC{i_SC}.true_SC_body.total_MI*obj.angular_velocity(:))' );
+        end
 
     end
 end

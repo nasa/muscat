@@ -12,6 +12,11 @@ classdef True_SC_Onboard_Clock < handle
 
         instantaneous_data_rate_generated % [kbps] : Data rate generated during current time step, in kilo bits (kb) per sec
 
+        instantaneous_data_type = 0 % 0 = Data rate, 1 = Data per sample 
+                                    % used to avoid calling isprop() every time
+                                    % step to determine if using instantaneous_data_rate_generated or
+                                    % instantaneous_data_generated_per_sample, which is slow
+
         mode_true_SC_onboard_clock_selector % [string]
         % - Simple 
 
@@ -123,7 +128,7 @@ classdef True_SC_Onboard_Clock < handle
                     switch obj.mode_true_SC_onboard_clock_selector
 
                         case 'Simple'
-                            this_measurement_noise = obj.measurement_noise*2*(rand-0.5); % [sec]  
+                            this_measurement_noise = obj.measurement_noise*randn(1); % [sec]  
                             obj.measurement_vector = [(mission.true_time.time + this_measurement_noise) (mission.true_time.date + this_measurement_noise)]; % [sec]
                             obj.measurement_time = mission.true_time.time; % [sec]
 

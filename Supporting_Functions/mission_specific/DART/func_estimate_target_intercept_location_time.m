@@ -12,7 +12,7 @@ function obj = func_estimate_target_intercept_location_time(obj, mission, i_SC)
 this_target_pos_vel_current = [mission.true_SC{i_SC}.software_SC_estimate_orbit.position_target(:);
     mission.true_SC{i_SC}.software_SC_estimate_orbit.velocity_target(:)];
 
-this_time_array = 0:60:obj.time_horizon;
+this_time_array = 0:60:obj.data.time_horizon;
 
 % Get the position of the Sun at each time step in the J2000 frame
 % for the defined time array.
@@ -22,7 +22,7 @@ Sun_pos_t0_tf = cspice_spkezr('10', mission.true_time.date + this_time_array, 'J
 % The function `func_orbit_SB_body` models the orbital motion of the body.
 [T, X] = ode113(@(t, X) func_orbit_SB_body(t, X, ...
     mission.true_solar_system.SS_body{mission.true_solar_system.index_Sun}.mu, ...
-    Sun_pos_t0_tf, this_time_array), this_time_array, this_target_pos_vel_current, obj.options);
+    Sun_pos_t0_tf, this_time_array), this_time_array, this_target_pos_vel_current, obj.data.options);
 
 % Store the target body's position and velocity over the simulation period.
 target_pos_t0_tf = X';
@@ -35,7 +35,7 @@ this_SC_pos_vel_current = [mission.true_SC{i_SC}.software_SC_estimate_orbit.posi
 % Simulate the spacecraft's trajectory over the same time horizon.
 [T, X] = ode113(@(t, X) func_orbit_SB_body(t, X, ...
     mission.true_solar_system.SS_body{mission.true_solar_system.index_Sun}.mu, ...
-    Sun_pos_t0_tf, this_time_array), this_time_array, this_SC_pos_vel_current, obj.options);
+    Sun_pos_t0_tf, this_time_array), this_time_array, this_SC_pos_vel_current, obj.data.options);
 
 % Store the spacecraft's position and velocity over the simulation period.
 SC_pos_t0_tf = X';
@@ -52,30 +52,30 @@ Distance_array = vecnorm(SC_pos_t0_tf(1:3, :) - target_pos_t0_tf(1:3, :), 2, 1);
 if min_index == 1
     % Case 1: If the minimum distance occurs at the first time step, it implies
     % that the orbits are diverging (the closest point is now, and they are moving apart).
-    obj.time_intercept = mission.true_time.time + obj.time_horizon/5 + ...
-        obj.time_horizon_DeltaV + obj.time_horizon_data_cutoff;
+    obj.data.time_intercept = mission.true_time.time + obj.data.time_horizon/5 + ...
+        obj.data.time_horizon_DeltaV + obj.data.time_horizon_data_cutoff;
 elseif (min_index > 1) && (min_index < length(Distance_array))
     % Case 2: The minimum distance occurs somewhere within the planning horizon.
-    obj.time_intercept = mission.true_time.time + this_time_array(min_index);
+    obj.data.time_intercept = mission.true_time.time + this_time_array(min_index);
     % If the calculated intercept time is too soon (before certain operational
     % thresholds like `time_horizon_DeltaV`), adjust the intercept time.
-    if (obj.time_intercept - mission.true_time.time) < ...
-            (obj.time_horizon_DeltaV + obj.time_horizon_data_cutoff)
-        obj.time_intercept = mission.true_time.time + obj.time_horizon/5 + ...
-            obj.time_horizon_DeltaV + obj.time_horizon_data_cutoff;
+    if (obj.data.time_intercept - mission.true_time.time) < ...
+            (obj.data.time_horizon_DeltaV + obj.data.time_horizon_data_cutoff)
+        obj.data.time_intercept = mission.true_time.time + obj.data.time_horizon/5 + ...
+            obj.data.time_horizon_DeltaV + obj.data.time_horizon_data_cutoff;
     end
 else
     % Case 3: If the minimum distance occurs at the last time step, it suggests
     % that the spacecraft and target body are converging slowly but don't intercept
     % within the planning horizon.
-    obj.time_intercept = mission.true_time.time + obj.time_horizon;
+    obj.data.time_intercept = mission.true_time.time + obj.data.time_horizon;
 end
 
 % Record the target body's position and velocity at the time of interception.
 % These values correspond to the time step with the minimum distance.
-obj.intercept_SB_position = target_pos_t0_tf(1:3, min_index);
-obj.intercept_SB_velocity = target_pos_t0_tf(4:6, min_index);
+obj.data.intercept_SB_position = target_pos_t0_tf(1:3, min_index);
+obj.data.intercept_SB_velocity = target_pos_t0_tf(4:6, min_index);
 
 % Record the minimum distance at interception.
-obj.intercept_distance = min_distance;
+obj.data.intercept_distance = min_distance;
 end
